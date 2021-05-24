@@ -233,10 +233,10 @@ minetest.register_node("spacetraveltechnology:fuel_generator", {
 		inv:set_size('fuel', 1);
 		
 		fuel_generator_node_timer(pos, 0);
-		spacetraveltechnology.block_functions.update_cable_connections_on_construct(pos);
+		spacetraveltechnology.energy_functions.update_cable_connections_on_construct(pos);
 	end,
 
-	on_destruct = spacetraveltechnology.block_functions.update_cable_connections_on_destruct,
+	on_destruct = spacetraveltechnology.energy_functions.update_cable_connections_on_destruct,
 	
 	on_metadata_inventory_put = function(pos)
 		-- start timer function, it will sort out whether furnace can burn or not.

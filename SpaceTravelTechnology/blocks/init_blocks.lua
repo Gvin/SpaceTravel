@@ -1,8 +1,11 @@
-local modPath = minetest.get_modpath("spacetraveltechnology");
+local path = minetest.get_modpath("spacetraveltechnology").."/blocks";
 
-dofile(modPath.."/blocks/block_functions.lua");
+spacetraveltechnology.blocks = {};
+
+dofile(path.."/energy_functions.lua");
+dofile(path.."/accumulator_register.lua");
 
 -- Blocks
-dofile(modPath.."/blocks/fuel_generator.lua");
-dofile(modPath.."/blocks/power_cable.lua");
-dofile(modPath.."/blocks/accumulator_small.lua");
+dofile(path.."/fuel_generator.lua");
+dofile(path.."/power_cable.lua");
+dofile(path.."/accumulators.lua");

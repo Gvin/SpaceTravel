@@ -1,5 +1,5 @@
 
-spacetraveltechnology.block_functions = {};
+spacetraveltechnology.energy_functions = {};
 
 local function check_connections(pos)
 	local connections = {}
@@ -71,7 +71,7 @@ local function clearPowerSourcesCache(position, blacklist)
 end
 
 -- Add this position to all connected nodes. Add all connected nodes to this node's connections.
-spacetraveltechnology.block_functions.update_cable_connections_on_construct = function(pos)
+spacetraveltechnology.energy_functions.update_cable_connections_on_construct = function(pos)
 	local meta = minetest.get_meta(pos);
 	local localConnections = {};
 	local positions = check_connections(pos);
@@ -96,7 +96,7 @@ spacetraveltechnology.block_functions.update_cable_connections_on_construct = fu
 end
 
 -- Remove this position from all connected nodes.
-spacetraveltechnology.block_functions.update_cable_connections_on_destruct = function(pos)
+spacetraveltechnology.energy_functions.update_cable_connections_on_destruct = function(pos)
 	local positions = check_connections(pos);
 	
 	if #positions < 1 then return; end -- No connections

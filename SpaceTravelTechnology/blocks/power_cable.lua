@@ -42,7 +42,7 @@ minetest.register_node("spacetraveltechnology:power_cable", {
 		local meta = minetest.get_meta(pos);
 		meta:set_int(spacetraveltechnology.conducts_energy_meta, 1);
 
-		spacetraveltechnology.block_functions.update_cable_connections_on_construct(pos);
+		spacetraveltechnology.energy_functions.update_cable_connections_on_construct(pos);
 	end,
-	on_destruct = spacetraveltechnology.block_functions.update_cable_connections_on_destruct
+	on_destruct = spacetraveltechnology.energy_functions.update_cable_connections_on_destruct
 })

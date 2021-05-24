@@ -1,16 +1,10 @@
 
-local S = spacetraveltechnology.get_translator;
-
 local metaEnergyMaxStorage = "spacetraveltechnology:energy_max_storage";
 local metaEnergyStorage = "spacetraveltechnology:energy_storage";
 local metaMaxChargeRate = "spacetraveltechnology:max_charge_rate";
 local metaMaxProduction = "spacetraveltechnology:max_production";
 
-local energyMaxStorage = 10000;
-local defaultEnergyStorage = 0;
-local defaultMaxChangeRate = 20;
-local defaultMaxProduction = 20;
-
+local S = spacetraveltechnology.get_translator;
 
 local function readConnections(meta)
 	local connections = spacetraveltechnology.meta_get_object(meta, spacetraveltechnology.energy_connections_meta);
@@ -74,7 +68,6 @@ local function findEnergySources(pos, blacklist)
 end
 
 local function getEnergySources(meta, pos)
-	minetest.log("Generating new energy sources");
 	local node = minetest.get_node(pos);
 	local dir = minetest.facedir_to_dir(node.param2 % 4)
 	local inputPos = vector.new(pos.x + dir.x * -1, pos.y + dir.y * -1, pos.z + dir.z * -1);
@@ -104,7 +97,6 @@ local function accumulator_node_timer(pos, elapsed)
 
 		if (energySources == nil) then -- If energy sources cache not initialized
 			energySources = getEnergySources(meta, pos);
-			minetest.log(minetest.serialize(energySources));
 			spacetraveltechnology.meta_set_object(meta, spacetraveltechnology.energy_sources_cache_meta, energySources);
 		end
 
@@ -150,48 +142,52 @@ local function accumulator_node_timer(pos, elapsed)
 	return true;
 end
 
-minetest.register_node("spacetraveltechnology:accumulator_small", {
-    description = "Small Accumulator",
-    tiles = {
-		"machine.png^accumulator_small_output.png",
-		"machine.png^accumulator_small_output.png",
-		"machine.png^accumulator_small_output.png",
-		"machine.png^accumulator_small_output.png",
-		"machine.png^accumulator_small_output.png",
-		"machine.png^accumulator_small_input.png"
-	},
-	paramtype2 = "facedir",
-    groups = {cracky = 2, [spacetraveltechnology.energy_group] = 1},
-	is_ground_content = false,
-	
-	drop = "spacetraveltechnology:accumulator_small",
-	
-	drawtype = "nodebox",
-	is_ground_content = false,
-	
-	on_timer = accumulator_node_timer,
-	
-	on_construct = function(pos)
-		local meta = minetest.get_meta(pos);
-		meta:set_int(metaEnergyMaxStorage, energyMaxStorage);
-		meta:set_int(metaEnergyStorage, defaultEnergyStorage);
-		meta:set_int(metaMaxChargeRate, defaultMaxChangeRate);
-		meta:set_int(metaMaxProduction, defaultMaxProduction);
-		meta:set_int(spacetraveltechnology.energy_production_left_meta, 0);
-		meta:set_int(spacetraveltechnology.energy_production_initial_meta, 0);
-		meta:set_int(spacetraveltechnology.is_energy_producer_meta, 1);
-		
-		local node = minetest.get_node(pos);
-		local dir = minetest.facedir_to_dir(node.param2 % 4)
-		local inputPos = vector.new(pos.x + dir.x * -1, pos.y + dir.y * -1, pos.z + dir.z * -1);
-		local productionBlacklist = {};
-		table.insert(productionBlacklist, inputPos);
-		spacetraveltechnology.meta_set_object(meta, spacetraveltechnology.energy_production_blacklist_meta, productionBlacklist);
-		
-		minetest.get_node_timer(pos):start(0.5);
-		
-		spacetraveltechnology.block_functions.update_cable_connections_on_construct(pos);
-		accumulator_node_timer(pos, 0);
-	end,
-	on_destruct = spacetraveltechnology.block_functions.update_cable_connections_on_destruct
-})
+-- Registration
+
+spacetraveltechnology.blocks.register_accumulator = function(name, description, maxStorage, maxChargeRate, maxProduction, tiles)
+    minetest.register_node(name, {
+        description = "Small Accumulator",
+        tiles = {
+            "machine.png^accumulator_small_output.png",
+            "machine.png^accumulator_small_output.png",
+            "machine.png^accumulator_small_output.png",
+            "machine.png^accumulator_small_output.png",
+            "machine.png^accumulator_small_output.png",
+            "machine.png^accumulator_small_input.png"
+        },
+        paramtype2 = "facedir",
+        groups = {cracky = 2, [spacetraveltechnology.energy_group] = 1},
+        is_ground_content = false,
+        
+        drop = "spacetraveltechnology:accumulator_small",
+        
+        drawtype = "nodebox",
+        is_ground_content = false,
+        
+        on_timer = accumulator_node_timer,
+        
+        on_construct = function(pos)
+            local meta = minetest.get_meta(pos);
+            meta:set_int(metaEnergyMaxStorage, maxStorage);
+            meta:set_int(metaEnergyStorage, 0);
+            meta:set_int(metaMaxChargeRate, maxChargeRate);
+            meta:set_int(metaMaxProduction, maxProduction);
+            meta:set_int(spacetraveltechnology.energy_production_left_meta, 0);
+            meta:set_int(spacetraveltechnology.energy_production_initial_meta, 0);
+            meta:set_int(spacetraveltechnology.is_energy_producer_meta, 1);
+            
+            local node = minetest.get_node(pos);
+            local dir = minetest.facedir_to_dir(node.param2 % 4)
+            local inputPos = vector.new(pos.x + dir.x * -1, pos.y + dir.y * -1, pos.z + dir.z * -1);
+            local productionBlacklist = {};
+            table.insert(productionBlacklist, inputPos);
+            spacetraveltechnology.meta_set_object(meta, spacetraveltechnology.energy_production_blacklist_meta, productionBlacklist);
+            
+            minetest.get_node_timer(pos):start(0.5);
+            
+            spacetraveltechnology.energy_functions.update_cable_connections_on_construct(pos);
+            accumulator_node_timer(pos, 0);
+        end,
+        on_destruct = spacetraveltechnology.energy_functions.update_cable_connections_on_destruct
+    });
+end
