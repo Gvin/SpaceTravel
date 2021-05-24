@@ -7,11 +7,9 @@ local defaultProducingPowerRate = 5;
 
 function spacetraveltechnology.get_fuel_generator_active_formspec(fuel_percent)
 	return "size[8,8.5]"..
-		"list[context;src;2.75,0.5;1,1;]"..
-		"list[context;fuel;2.75,2.5;1,1;]"..
-		"image[2.75,1.5;1,1;fuel_generator_fire_bg.png^[lowpart:"..
+		"list[context;fuel;3.5,2.5;1,1;]"..
+		"image[3.5,1.5;1,1;fuel_generator_fire_bg.png^[lowpart:"..
 		(fuel_percent)..":fuel_generator_fire_fg.png]"..
-		"list[context;dst;4.75,0.96;2,2;]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..
 		"listring[current_player;main]"..
@@ -23,8 +21,8 @@ end
 
 function spacetraveltechnology.get_fuel_generator_inactive_formspec()
 	return "size[8,8.5]"..
-		"list[context;fuel;2.75,2.5;1,1;]"..
-		"image[2.75,1.5;1,1;fuel_generator_fire_bg.png]"..
+		"list[context;fuel;3.5,2.5;1,1;]"..
+		"image[3.5,1.5;1,1;fuel_generator_fire_bg.png]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..
 		"listring[current_player;main]"..
