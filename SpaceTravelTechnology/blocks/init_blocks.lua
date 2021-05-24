@@ -9,3 +9,4 @@ dofile(path.."/accumulator_register.lua");
 dofile(path.."/fuel_generator.lua");
 dofile(path.."/power_cable.lua");
 dofile(path.."/accumulators.lua");
+dofile(path.."/electric_furnace.lua");

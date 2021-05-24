@@ -147,14 +147,7 @@ end
 spacetraveltechnology.blocks.register_accumulator = function(name, description, maxStorage, maxChargeRate, maxProduction, tiles)
     minetest.register_node(name, {
         description = "Small Accumulator",
-        tiles = {
-            "machine.png^accumulator_small_output.png",
-            "machine.png^accumulator_small_output.png",
-            "machine.png^accumulator_small_output.png",
-            "machine.png^accumulator_small_output.png",
-            "machine.png^accumulator_small_output.png",
-            "machine.png^accumulator_small_input.png"
-        },
+        tiles = tiles,
         paramtype2 = "facedir",
         groups = {cracky = 2, [spacetraveltechnology.energy_group] = 1},
         is_ground_content = false,
