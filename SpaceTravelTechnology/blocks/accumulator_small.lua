@@ -124,14 +124,17 @@ local function accumulator_node_timer(pos, elapsed)
 	local maxProduction = meta:get_int(metaMaxProduction);
 	
 	local currentLeftProduction = meta:get_int(spacetraveltechnology.energy_production_left_meta);
-	if (currentLeftProduction < maxProduction) then
-		storage = math.max(0, storage - (maxProduction - currentLeftProduction));
+	local currentInitialProduction = meta:get_int(spacetraveltechnology.energy_production_initial_meta);
+	local currentProductionDrop = currentInitialProduction - currentLeftProduction;
+	if (currentProductionDrop > 0) then
+		storage = math.max(0, storage - currentProductionDrop);
 	end
 	
 	meta:set_int(metaEnergyStorage, storage);
 
 	local maxPowerProduction = math.min(storage, maxProduction);
 	meta:set_int(spacetraveltechnology.energy_production_left_meta, maxPowerProduction);
+	meta:set_int(spacetraveltechnology.energy_production_initial_meta, maxPowerProduction);
 	
 	local percent = math.floor(storage*100/maxStorage);
 	meta:set_string("infotext", S("Energy Storage: @1 / @2 (@3%)", storage, maxStorage, percent));
@@ -167,6 +170,8 @@ minetest.register_node("spacetraveltechnology:accumulator_small", {
 		meta:set_int(metaMaxChargeRate, defaultMaxChangeRate);
 		meta:set_int(metaMaxProduction, defaultMaxProduction);
 		meta:set_int(spacetraveltechnology.energy_production_left_meta, 0);
+		meta:set_int(spacetraveltechnology.energy_production_initial_meta, 0);
+		meta:set_int(spacetraveltechnology.is_energy_producer_meta, 1);
 		
 		local node = minetest.get_node(pos);
 		local dir = minetest.facedir_to_dir(node.param2 % 4)

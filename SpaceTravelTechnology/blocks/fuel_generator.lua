@@ -180,8 +180,10 @@ local function fuel_generator_node_timer(pos, elapsed)
 	if (active) then
 		local producingPower = meta:get_int(metaProducingPowerRate);
 		meta:set_int(spacetraveltechnology.energy_production_left_meta, producingPower);
+		meta:set_int(spacetraveltechnology.energy_production_initial_meta, producingPower);
 	else
 		meta:set_int(spacetraveltechnology.energy_production_left_meta, 0);
+		meta:set_int(spacetraveltechnology.energy_production_initial_meta, 0);
 	end
 
 	local infotext
@@ -224,7 +226,9 @@ minetest.register_node("spacetraveltechnology:fuel_generator", {
 		
 		meta:set_int(metaProducingPowerRate, defaultProducingPowerRate);
 		meta:set_int(spacetraveltechnology.energy_production_left_meta, 0);
-		
+		meta:set_int(spacetraveltechnology.energy_production_initial_meta, 0);
+		meta:set_int(spacetraveltechnology.is_energy_producer_meta, 1);
+
 		local inv = meta:get_inventory();
 		inv:set_size('fuel', 1);
 		
