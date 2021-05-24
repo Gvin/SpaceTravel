@@ -1,0 +1,4 @@
+spacetraveltechnology.energy_group = "spacetravel_energy";
+spacetraveltechnology.energy_connections_meta = "spacetraveltechnology:energy_connections";
+spacetraveltechnology.energy_production_left_meta = "spacetraveltechnology:energy_production_left";
+spacetraveltechnology.energy_production_blacklist_meta = "spacetraveltechnology:energy_production_blacklist_meta";
