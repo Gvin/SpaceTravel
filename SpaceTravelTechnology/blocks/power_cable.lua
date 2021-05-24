@@ -38,6 +38,11 @@ minetest.register_node("spacetraveltechnology:power_cable", {
 	
 	connects_to = {"group:"..spacetraveltechnology.energy_group},
 	
-	on_construct = spacetraveltechnology.block_functions.update_cable_connections_on_construct,
+	on_construct = function(pos)
+		local meta = minetest.get_meta(pos);
+		meta:set_int(spacetraveltechnology.conducts_energy_meta, 1);
+
+		spacetraveltechnology.block_functions.update_cable_connections_on_construct(pos);
+	end,
 	on_destruct = spacetraveltechnology.block_functions.update_cable_connections_on_destruct
 })

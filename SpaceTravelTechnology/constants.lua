@@ -5,3 +5,4 @@ spacetraveltechnology.energy_production_initial_meta = "spacetraveltechnology:en
 spacetraveltechnology.energy_production_blacklist_meta = "spacetraveltechnology:energy_production_blacklist_meta";
 spacetraveltechnology.is_energy_producer_meta = "spacetraveltechnology:is_energy_producer";
 spacetraveltechnology.energy_sources_cache_meta = "spacetraveltechnology:energy_sources_cache";
+spacetraveltechnology.conducts_energy_meta = "spacetraveltechnology:conducts_energy";

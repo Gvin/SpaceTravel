@@ -30,44 +30,42 @@ local function connectionsContains(connections, position)
 	return false;
 end
 
-local function getPowerProduction(meta)
-	return meta:get_int(spacetraveltechnology.energy_production_left_meta);
-end
-
-local function find_power_sources(pos, blacklist)
+local function findEnergySources(pos, blacklist)
 	table.insert(blacklist, pos); -- Exclude double checking
 	local results = {};
 	
 	local meta = minetest.get_meta(pos);
-	
-	--local power = getPowerProduction(meta);
+
 	local isEnergyProducer = meta:get_int(spacetraveltechnology.is_energy_producer_meta) == 1;
 	if (isEnergyProducer) then -- Power sources is result
 		table.insert(results, pos);
 	end
-	
-	local connections = readConnections(meta);
-	local uncheckedConnections = {};
-	for _, connection in pairs(connections) do
-		if (not connectionsContains(blacklist, connection)) then
-			local connectionMeta = minetest.get_meta(connection);
-			local productionBlacklist = spacetraveltechnology.meta_get_object(connectionMeta, spacetraveltechnology.energy_production_blacklist_meta);
-			
-			if (productionBlacklist == nil or not connectionsContains(productionBlacklist, pos)) then
-				table.insert(uncheckedConnections, connection);
+
+	local conductsEnergy = meta:get_int(spacetraveltechnology.conducts_energy_meta) == 1;
+	if (conductsEnergy) then -- check extra connections only if block conducts energy
+		local connections = readConnections(meta);
+		local uncheckedConnections = {};
+		for _, connection in pairs(connections) do
+			if (not connectionsContains(blacklist, connection)) then
+				local connectionMeta = minetest.get_meta(connection);
+				local productionBlacklist = spacetraveltechnology.meta_get_object(connectionMeta, spacetraveltechnology.energy_production_blacklist_meta);
+				
+				if (productionBlacklist == nil or not connectionsContains(productionBlacklist, pos)) then
+					table.insert(uncheckedConnections, connection);
+				end
 			end
 		end
-	end
-	
-	if (#uncheckedConnections == 0) then
-		return results;
-	end
-	
-	for _, uncheckedConn in pairs(uncheckedConnections) do
-		local subcheckResults = find_power_sources(uncheckedConn, blacklist);
-		for _, subRes in pairs(subcheckResults) do
-			if (not connectionsContains(results, subRes)) then
-				table.insert(results, subRes);
+		
+		if (#uncheckedConnections == 0) then
+			return results;
+		end
+		
+		for _, uncheckedConn in pairs(uncheckedConnections) do
+			local subcheckResults = findEnergySources(uncheckedConn, blacklist);
+			for _, subRes in pairs(subcheckResults) do
+				if (not connectionsContains(results, subRes)) then
+					table.insert(results, subRes);
+				end
 			end
 		end
 	end
@@ -90,7 +88,7 @@ local function getEnergySources(meta, pos)
 	if (connectionsContains(connections, inputPos)) then
 		local blacklist = {};
 		table.insert(blacklist, pos);
-		return find_power_sources(inputPos, blacklist);
+		return findEnergySources(inputPos, blacklist);
 	else
 		return {};
 	end
