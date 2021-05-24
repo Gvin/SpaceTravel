@@ -58,6 +58,17 @@ local function removeConnection(connections, position)
 	end
 end
 
+local function clearPowerSourcesCache(position, blacklist)
+	table.insert(blacklist, position);
+	local meta = minetest.get_meta(position);
+	meta:set_string(spacetraveltechnology.energy_sources_cache_meta, nil);
+	local connections = readConnections(meta);
+	for _, connection in pairs(connections) do
+		if (not connectionsContains(blacklist, connection)) then
+			clearPowerSourcesCache(connection, blacklist);
+		end
+	end
+end
 
 -- Add this position to all connected nodes. Add all connected nodes to this node's connections.
 spacetraveltechnology.block_functions.update_cable_connections_on_construct = function(pos)
@@ -81,6 +92,7 @@ spacetraveltechnology.block_functions.update_cable_connections_on_construct = fu
 	end
 	
 	saveConnections(meta, localConnections);
+	clearPowerSourcesCache(pos, {});
 end
 
 -- Remove this position from all connected nodes.
@@ -95,4 +107,6 @@ spacetraveltechnology.block_functions.update_cable_connections_on_destruct = fun
 		removeConnection(connectionsOnTarget, pos);
 		saveConnections(targetMeta, connectionsOnTarget);
 	end
+
+	clearPowerSourcesCache(pos, {});
 end

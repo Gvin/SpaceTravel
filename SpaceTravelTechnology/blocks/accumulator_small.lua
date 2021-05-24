@@ -40,8 +40,9 @@ local function find_power_sources(pos, blacklist)
 	
 	local meta = minetest.get_meta(pos);
 	
-	local power = getPowerProduction(meta);
-	if (power > 0) then -- Power sources is result
+	--local power = getPowerProduction(meta);
+	local isEnergyProducer = meta:get_int(spacetraveltechnology.is_energy_producer_meta) == 1;
+	if (isEnergyProducer) then -- Power sources is result
 		table.insert(results, pos);
 	end
 	
@@ -74,39 +75,48 @@ local function find_power_sources(pos, blacklist)
 	return results;
 end
 
+local function getEnergySources(meta, pos)
+	minetest.log("Generating new energy sources");
+	local node = minetest.get_node(pos);
+	local dir = minetest.facedir_to_dir(node.param2 % 4)
+	local inputPos = vector.new(pos.x + dir.x * -1, pos.y + dir.y * -1, pos.z + dir.z * -1);
+
+	local connections = readConnections(meta);
+
+	local positionsEqual = function(pos1, pos2)
+		return pos1.x == pos2.x and pos1.y == pos2.y and pos1.z == pos2.z;
+	end
+
+	if (connectionsContains(connections, inputPos)) then
+		local blacklist = {};
+		table.insert(blacklist, pos);
+		return find_power_sources(inputPos, blacklist);
+	else
+		return {};
+	end
+end
+
 local function accumulator_node_timer(pos, elapsed)
 	local meta = minetest.get_meta(pos);
 	local maxStorage = meta:get_int(metaEnergyMaxStorage);
 	local storage = meta:get_int(metaEnergyStorage);
-	
-	-- Check charging
-	local node = minetest.get_node(pos);
-	local dir = minetest.facedir_to_dir(node.param2 % 4)
-	local inputPos = vector.new(pos.x + dir.x * -1, pos.y + dir.y * -1, pos.z + dir.z * -1);
-	
-	local connections = readConnections(meta);
-	
-	local positionsEqual = function(pos1, pos2)
-		return pos1.x == pos2.x and pos1.y == pos2.y and pos1.z == pos2.z;
-	end
-	
-	-- If input position in connections
-	if (connectionsContains(connections, inputPos)) then
-		local notThisNodeFilter = function(nodePos)
-			return not positionsEqual(nodePos, pos);
+
+	if (storage < maxStorage) then -- If charging needed
+		local energySources = spacetraveltechnology.meta_get_object(meta, spacetraveltechnology.energy_sources_cache_meta);
+
+		if (energySources == nil) then -- If energy sources cache not initialized
+			energySources = getEnergySources(meta, pos);
+			minetest.log(minetest.serialize(energySources));
+			spacetraveltechnology.meta_set_object(meta, spacetraveltechnology.energy_sources_cache_meta, energySources);
 		end
-		
-		local blacklist = {};
-		table.insert(blacklist, pos);
-		local powerSourcePositions = find_power_sources(inputPos, blacklist);
-		
+
 		local storageLeft = maxStorage - storage;
 		local maxChargeRate = math.min(meta:get_int(metaMaxChargeRate), storageLeft);
 		local availablePower = 0;
 		local index = 1;
 		
-		while (index <= #powerSourcePositions and availablePower < maxChargeRate) do
-			local powerSourcePosition = powerSourcePositions[index];
+		while (index <= #energySources and availablePower < maxChargeRate) do
+			local powerSourcePosition = energySources[index];
 			local powerSourceMeta = minetest.get_meta(powerSourcePosition);
 			local powerFromSource = powerSourceMeta:get_int(spacetraveltechnology.energy_production_left_meta);
 			local collectedPower = math.min(powerFromSource, maxChargeRate - availablePower);
@@ -117,7 +127,7 @@ local function accumulator_node_timer(pos, elapsed)
 			
 			index = index + 1;
 		end
-		
+
 		storage = math.min(maxStorage, storage + availablePower);
 	end
 	
