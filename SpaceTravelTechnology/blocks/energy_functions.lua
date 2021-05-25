@@ -1,6 +1,8 @@
 
 spacetraveltechnology.energy_functions = {};
 
+local tableExt = spacetraveltechnology.table;
+
 local function check_connections(pos)
 	local connections = {}
 	local positions = {
@@ -109,4 +111,125 @@ spacetraveltechnology.energy_functions.update_cable_connections_on_destruct = fu
 	end
 
 	clearPowerSourcesCache(pos, {});
+end
+
+local function readConnections(meta)
+	local connections = spacetraveltechnology.meta_get_object(meta, spacetraveltechnology.energy_connections_meta);
+	if (connections == nil) then
+		return {};
+	else
+		return connections;
+	end
+end
+
+local function connectionsContains(connections, position)
+	for _, connection in pairs(connections) do
+		if (connection.x == position.x and connection.y == position.y and connection.z == position.z) then
+			return true;
+		end
+	end
+	return false;
+end
+
+local function collectEnergySources(position, blacklist)
+	table.insert(blacklist, position); -- Exclude double checking
+	local results = {};
+
+	local meta = minetest.get_meta(position);
+
+	local isEnergyProducer = meta:get_int(spacetraveltechnology.is_energy_producer_meta) == 1;
+	if (isEnergyProducer) then -- Power sources is result
+		table.insert(results, position);
+	end
+
+	local conductsEnergy = meta:get_int(spacetraveltechnology.conducts_energy_meta) == 1;
+	if (conductsEnergy) then -- check extra connections only if block conducts energy
+		local connections = readConnections(meta);
+		local uncheckedConnections = {};
+		for _, connection in pairs(connections) do
+			if (not connectionsContains(blacklist, connection)) then
+				local connectionMeta = minetest.get_meta(connection);
+				local productionBlacklist = spacetraveltechnology.meta_get_object(connectionMeta, spacetraveltechnology.energy_production_blacklist_meta);
+				
+				if (productionBlacklist == nil or not connectionsContains(productionBlacklist, position)) then
+					table.insert(uncheckedConnections, connection);
+				end
+			end
+		end
+		
+		for _, uncheckedConn in pairs(uncheckedConnections) do
+			local subcheckResults = collectEnergySources(uncheckedConn, blacklist);
+			for _, subRes in pairs(subcheckResults) do
+				if (not connectionsContains(results, subRes)) then
+					table.insert(results, subRes);
+				end
+			end
+		end
+	end
+	
+	return results;
+end
+
+local function getEnergySources(position, meta, inputPositions)
+	local searchStartPositions = {};
+	if (inputPositions ~= nil) then
+		searchStartPositions = inputPositions;
+	else
+		searchStartPositions = spacetraveltechnology.meta_get_object(meta, spacetraveltechnology.energy_connections_meta);
+		if (searchStartPositions == nil) then
+			return {};
+		end
+	end
+
+	local result = {};
+	local blacklist = {position};
+	for _, searchStart in pairs(searchStartPositions) do
+		local subResults = collectEnergySources(searchStart, blacklist);
+		for _, source in pairs(subResults) do
+			table.insert(result, source);
+		end
+	end
+
+	return result;
+end
+
+local function getEnergyProduction(position)
+	local meta = minetest.get_meta(position);
+	local productionLeft = meta:get_int(spacetraveltechnology.energy_production_left_meta);
+	if (productionLeft == nil) then
+		return 0;
+	else
+		return productionLeft;
+	end
+end
+
+spacetraveltechnology.energy_functions.try_consume_energy = function(position, requiredEnergy, allowPartial, inputPositions)
+	local meta = minetest.get_meta(position);
+	local energySources = spacetraveltechnology.meta_get_object(meta, spacetraveltechnology.energy_sources_cache_meta);
+	if (energySources == nil) then
+		energySources = getEnergySources(position, meta, inputPositions);
+		spacetraveltechnology.meta_set_object(meta, spacetraveltechnology.energy_sources_cache_meta, energySources);
+	end
+
+	local totalEnergyAvailable = tableExt.reduce(energySources, function (sum, value) return sum + getEnergyProduction(value); end, 0);
+
+	if (totalEnergyAvailable < requiredEnergy and not allowPartial) then
+		return 0;
+	else
+		local index = 1;
+		local collectedEnergy = 0;
+
+		while (index <= #energySources and collectedEnergy < requiredEnergy) do
+			local energySource = energySources[index];
+			local energySourceMeta = minetest.get_meta(energySource);
+			local energyLeft = energySourceMeta:get_int(spacetraveltechnology.energy_production_left_meta);
+			local energyConsumed = math.min(energyLeft, requiredEnergy - collectedEnergy);
+			energySourceMeta:set_int(spacetraveltechnology.energy_production_left_meta, energyLeft - energyConsumed);
+			collectedEnergy = collectedEnergy + energyConsumed;
+
+			index = index + 1;
+		end
+
+		return collectedEnergy;
+	end
 end

@@ -6,10 +6,10 @@ spacetraveltechnology.blocks.register_accumulator(
     20, -- Max charge rate
     20, -- Max energy production
     {
-        "machine.png^accumulator_small_output.png",
-        "machine.png^accumulator_small_output.png",
-        "machine.png^accumulator_small_output.png",
-        "machine.png^accumulator_small_output.png",
-        "machine.png^accumulator_small_output.png",
-        "machine.png^accumulator_small_input.png"
+        "machine.png^machine_output.png",
+        "machine.png^machine_output.png",
+        "machine.png^machine_output.png",
+        "machine.png^machine_output.png",
+        "machine.png^machine_output.png",
+        "machine.png^machine_input.png"
     });

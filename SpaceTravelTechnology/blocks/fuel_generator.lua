@@ -206,11 +206,11 @@ end
 minetest.register_node("spacetraveltechnology:fuel_generator", {
     description = "Fuel Generator",
     tiles = {
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
 		"machine.png^fuel_generator_front.png"
 	},
 	paramtype2 = "facedir",
@@ -266,11 +266,11 @@ minetest.register_node("spacetraveltechnology:fuel_generator", {
 minetest.register_node("spacetraveltechnology:fuel_generator_active", {
 	description = "Fuel Generator",
 	tiles = {
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
-		"machine.png^fuel_generator_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
+		"machine.png^machine_output.png",
 		{
 			image = "machine.png^fuel_generator_front_active.png",
 			backface_culling = false,
