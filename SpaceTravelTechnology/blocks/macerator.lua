@@ -2,7 +2,7 @@ local S = spacetraveltechnology.get_translator;
 
 local powerRequiredToWork = 5;
 
-function spacetraveltechnology.get_electric_furnace_active_formspec(item_percent)
+function spacetraveltechnology.get_macerator_active_formspec(item_percent)
 	return "size[8,8.5]"..
 		"list[context;src;2.75,1.5;1,1;]"..
 		"image[3.75,1.5;1,1;gui_furnace_arrow_bg.png^[lowpart:"..
@@ -17,7 +17,7 @@ function spacetraveltechnology.get_electric_furnace_active_formspec(item_percent
 		default.get_hotbar_bg(0, 4.25)
 end
 
-function spacetraveltechnology.get_electric_furnace_inactive_formspec()
+function spacetraveltechnology.get_macerator_inactive_formspec()
 	return "size[8,8.5]"..
 		"list[context;src;2.75,1.5;1,1;]"..
 		"image[3.75,1.5;1,1;gui_furnace_arrow_bg.png^[transformR270]"..
@@ -65,37 +65,50 @@ local function tryConsumeEnergy(pos)
     return spacetraveltechnology.energy_functions.try_consume_energy(pos, powerRequiredToWork, false) == powerRequiredToWork;
 end
 
-local function electric_furnace_node_timer(pos, elapsed)
+local function getMaceratorRecipe(items)
+    if (items == nil or items:get_count() == 0) then
+        return;
+    end
+
+    return spacetravelcore.get_process_recipe(spacetravelcore.recipe_types.grinding, items:get_name());
+end
+
+local function macerator_node_timer(pos, elapsed)
     local meta = minetest.get_meta(pos)
 
 	local src_time = meta:get_float("src_time") or 0;
 
 	local inv = meta:get_inventory();
 	local srclist = inv:get_list("src");
+    local srcStack = inv:get_stack("src", 1);
 	local dst_full = false;
 
-    local cooked, aftercooked = minetest.get_craft_result({method = "cooking", width = 1, items = srclist})
-    local cookable = cooked.time ~= 0;
+    local recipe = getMaceratorRecipe(srcStack);
+
+    local outputStack;
+    if (recipe ~= nil) then
+        outputStack = ItemStack({ name = recipe.output_name, count = recipe.output_count });
+    end
+    local processable = recipe ~= nil;
 
     local active = false;
 
-    if cookable then
+    if processable then
         local energyConsumed = tryConsumeEnergy(pos);
         if (energyConsumed) then
             active = true;
             src_time = src_time + elapsed;
-            if src_time >= cooked.time then
+            if src_time >= recipe.time then
                 -- Place result in dst list if possible
-                if inv:room_for_item("dst", cooked.item) then
-                    inv:add_item("dst", cooked.item)
-                    inv:set_stack("src", 1, aftercooked.items[1])
-                    src_time = src_time - cooked.time
+                if inv:room_for_item("dst", outputStack) then
+                    inv:add_item("dst", outputStack);
+
+                    local stackToRemove = ItemStack({ name = recipe.input_name, count = 1 });
+                    inv:remove_item("src", stackToRemove);
+                    src_time = src_time - recipe.time
                 else
                     dst_full = true
                 end
-                -- Play cooling sound
-                minetest.sound_play("default_cool_lava",
-                    {pos = pos, max_hear_distance = 16, gain = 0.1}, true)
             end
         end
     end
@@ -109,8 +122,8 @@ local function electric_furnace_node_timer(pos, elapsed)
     local formspec;
 	local item_state;
 	local item_percent = 0;
-	if cookable then
-		item_percent = math.floor(src_time / cooked.time * 100)
+	if processable then
+		item_percent = math.floor(src_time / recipe.time * 100)
 		if dst_full then
 			item_state = S("100% (output full)");
 		else
@@ -118,26 +131,26 @@ local function electric_furnace_node_timer(pos, elapsed)
 		end
 	else
 		if srclist and not srclist[1]:is_empty() then
-			item_state = S("Not cookable");
+			item_state = S("Cannot process");
 		else
 			item_state = S("Empty");
 		end
 	end
 
     if (active) then
-        formspec = spacetraveltechnology.get_electric_furnace_active_formspec(item_percent);
-		swap_node(pos, "spacetraveltechnology:electric_furnace_active");
+        formspec = spacetraveltechnology.get_macerator_active_formspec(item_percent);
+		swap_node(pos, "spacetraveltechnology:macerator_active");
     else
-        formspec = spacetraveltechnology.get_electric_furnace_inactive_formspec();
-		swap_node(pos, "spacetraveltechnology:electric_furnace");
+        formspec = spacetraveltechnology.get_macerator_inactive_formspec();
+		swap_node(pos, "spacetraveltechnology:macerator");
     end
 
 
 	local infotext
 	if active then
-		infotext = S("Furnace active");
+		infotext = S("Macerator active");
 	else
-		infotext = S("Furnace inactive");
+		infotext = S("Macerator inactive");
 	end
 	infotext = infotext .. "\n" .. S("(Item: @1)", item_state);
 
@@ -151,21 +164,21 @@ local function electric_furnace_node_timer(pos, elapsed)
 	return continueTimer;
 end
 
-minetest.register_node("spacetraveltechnology:electric_furnace", {
-    description = S("Electric Furnace"),
+minetest.register_node("spacetraveltechnology:macerator", {
+    description = S("Macerator"),
     tiles = {
+		"machine.png^macerator_top.png",
 		"machine.png^machine_output.png",
 		"machine.png^machine_output.png",
 		"machine.png^machine_output.png",
 		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^electric_furnace_front.png"
+		"machine.png^macerator_front.png"
 	},
 	paramtype2 = "facedir",
     groups = {cracky = 2, [spacetraveltechnology.energy_group] = 1},
 	is_ground_content = false,
 	
-	on_timer = electric_furnace_node_timer,
+	on_timer = macerator_node_timer,
 	
 	on_construct = function(pos)
 		local meta = minetest.get_meta(pos);
@@ -176,7 +189,7 @@ minetest.register_node("spacetraveltechnology:electric_furnace", {
 
 		spacetraveltechnology.energy_functions.update_cable_connections_on_construct(pos);
 
-        electric_furnace_node_timer(pos, 0);
+        macerator_node_timer(pos, 0);
 	end,
 
 	on_destruct = spacetraveltechnology.energy_functions.update_cable_connections_on_destruct,
@@ -197,7 +210,7 @@ minetest.register_node("spacetraveltechnology:electric_furnace", {
 		local drops = {}
 		spacetraveltechnology.get_inventory_drops(pos, "src", drops);
 		spacetraveltechnology.get_inventory_drops(pos, "dst", drops);
-		drops[#drops+1] = "spacetraveltechnology:electric_furnace"
+		drops[#drops+1] = "spacetraveltechnology:macerator"
 		minetest.remove_node(pos)
 		return drops
 	end,
@@ -209,25 +222,25 @@ minetest.register_node("spacetraveltechnology:electric_furnace", {
 	allow_metadata_inventory_take = allow_metadata_inventory_take
 })
 
-minetest.register_node("spacetraveltechnology:electric_furnace_active", {
-	description = S("Electric Furnace"),
+minetest.register_node("spacetraveltechnology:macerator_active", {
+	description = S("Macerator"),
 	tiles = {
+		"machine.png^macerator_top_active.png",
 		"machine.png^machine_output.png",
 		"machine.png^machine_output.png",
 		"machine.png^machine_output.png",
 		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^electric_furnace_front_active.png"
+		"machine.png^macerator_front.png"
 	},
 	paramtype2 = "facedir",
 
 	light_source = 8,
-	drop = "spacetraveltechnology:electric_furnace",
+	drop = "spacetraveltechnology:macerator",
 	groups = {cracky=2, not_in_creative_inventory=1, [spacetraveltechnology.energy_group] = 1},
 	legacy_facedir_simple = true,
 	is_ground_content = false,
 
-	on_timer = electric_furnace_node_timer,
+	on_timer = macerator_node_timer,
 
 	can_dig = can_dig,
 
