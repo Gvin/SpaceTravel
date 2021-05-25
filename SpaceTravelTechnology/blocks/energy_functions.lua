@@ -175,7 +175,7 @@ local function getEnergySources(position, meta, inputPositions)
 	if (inputPositions ~= nil) then
 		searchStartPositions = inputPositions;
 	else
-		searchStartPositions = spacetraveltechnology.meta_get_object(spacetraveltechnology.energy_connections_meta);
+		searchStartPositions = spacetraveltechnology.meta_get_object(meta, spacetraveltechnology.energy_connections_meta);
 		if (searchStartPositions == nil) then
 			return {};
 		end

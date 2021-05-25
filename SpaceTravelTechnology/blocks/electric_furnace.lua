@@ -62,7 +62,7 @@ local function swap_node(pos, name)
 end
 
 local function tryConsumeEnergy(pos)
-    return true;
+    return spacetraveltechnology.energy_functions.try_consume_energy(pos, powerRequiredToWork, false) == powerRequiredToWork;
 end
 
 local function electric_furnace_node_timer(pos, elapsed)
