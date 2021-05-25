@@ -12,8 +12,6 @@ function spacetraveltechnology.get_fuel_generator_active_formspec(fuel_percent)
 		(fuel_percent)..":fuel_generator_fire_fg.png]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..
-		"listring[current_player;main]"..
-		"listring[current_player;main]"..
 		"listring[context;fuel]"..
 		"listring[current_player;main]"..
 		spacetraveltechnology.get_hotbar_bg(0, 4.25)
@@ -25,8 +23,6 @@ function spacetraveltechnology.get_fuel_generator_inactive_formspec()
 		"image[3.5,1.5;1,1;fuel_generator_fire_bg.png]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..
-		"listring[current_player;main]"..
-		"listring[current_player;main]"..
 		"listring[context;fuel]"..
 		"listring[current_player;main]"..
 		spacetraveltechnology.get_hotbar_bg(0, 4.25)
@@ -86,99 +82,68 @@ local function swap_node(pos, name)
 end
 
 local function fuel_generator_node_timer(pos, elapsed)
-	--
-	-- Initialize metadata
-	--
-	local meta = minetest.get_meta(pos)
-	local fuel_time = meta:get_float("fuel_time") or 0
-	local fuel_totaltime = meta:get_float("fuel_totaltime") or 0
+	local meta = minetest.get_meta(pos);
+	local fuel_time = meta:get_float("fuel_time") or 0;
+	local fuel_totaltime = meta:get_float("fuel_totaltime") or 0;
 
-	local inv = meta:get_inventory()
-	local fuellist
+	local inv = meta:get_inventory();
 
-	local timer_elapsed = meta:get_int("timer_elapsed") or 0
-	meta:set_int("timer_elapsed", timer_elapsed + 1)
+	local fuel;
 
-	local fuel
+	local burningTime = math.min(elapsed, fuel_totaltime - fuel_time);
+	local fuellist = inv:get_list("fuel");
 
-	local update = true
+	if (fuel_time < fuel_totaltime) then
+		fuel_time = fuel_time + burningTime;
+	else
+		-- Furnace ran out of fuel
+		local afterfuel;
+		fuel, afterfuel = minetest.get_craft_result({method = "fuel", width = 1, items = fuellist});
 
-	while elapsed > 0 and update do
-		update = false
-		
-		local el = math.min(elapsed, fuel_totaltime - fuel_time);
-		
-		fuellist = inv:get_list("fuel")
-
-		-- Check if we have enough fuel to burn
-		if fuel_time < fuel_totaltime then
-			-- The furnace is currently active and has enough fuel
-			fuel_time = fuel_time + el
-			-- If there is a cookable item then check if it is ready yet
+		if (fuel.time == 0) then
+			-- No valid fuel in fuel list
+			fuel_totaltime = 0;
 		else
-			-- Furnace ran out of fuel
-			local afterfuel
-			fuel, afterfuel = minetest.get_craft_result({method = "fuel", width = 1, items = fuellist})
-			
-			if fuel.time == 0 then
-				-- No valid fuel in fuel list
-				fuel_totaltime = 0
-			else
-				-- Take fuel from fuel list
-				inv:set_stack("fuel", 1, afterfuel.items[1])
-				update = true
-				fuel_totaltime = fuel.time + (fuel_totaltime - fuel_time)
-			end
-			
-			fuel_time = 0
+			-- Take fuel from fuel list
+			inv:set_stack("fuel", 1, afterfuel.items[1]);
+			fuel_totaltime = fuel.time + (fuel_totaltime - fuel_time);
 		end
-
-		elapsed = elapsed - el
+		
+		fuel_time = 0;
 	end
 
-	if fuel and fuel_totaltime > fuel.time then
-		fuel_totaltime = fuel.time
+	if (fuel and fuel_totaltime > fuel.time) then
+		fuel_totaltime = fuel.time;
 	end
 
-	--
 	-- Update formspec, infotext and node
-	--
-	local formspec
-
 	local fuel_state = S("Empty")
 	local active = false
 	local result = false
 
 	if fuel_totaltime ~= 0 then
-		active = true
-		local fuel_percent = 100 - math.floor(fuel_time / fuel_totaltime * 100)
-		fuel_state = S("@1%", fuel_percent)
-		formspec = spacetraveltechnology.get_fuel_generator_active_formspec(fuel_percent)
-		swap_node(pos, "spacetraveltechnology:fuel_generator_active")
-		-- make sure timer restarts automatically
-		result = true
-
-		-- Play sound every 5 seconds while the generator is active
-		if timer_elapsed == 0 or (timer_elapsed+1) % 5 == 0 then
-			--minetest.sound_play("default_furnace_active",
-				--{pos = pos, max_hear_distance = 16, gain = 0.5}, true)
-		end
+		active = true;
+		local fuel_percent = 100 - math.floor(fuel_time / fuel_totaltime * 100);
+		fuel_state = S("@1%", fuel_percent);
+		formspec = spacetraveltechnology.get_fuel_generator_active_formspec(fuel_percent);
+		swap_node(pos, "spacetraveltechnology:fuel_generator_active");
 	else
 		if fuellist and not fuellist[1]:is_empty() then
-			fuel_state = S("@1%", 0)
+			fuel_state = S("@1%", 0);
 		end
-		formspec = spacetraveltechnology.get_fuel_generator_inactive_formspec()
-		swap_node(pos, "spacetraveltechnology:fuel_generator")
+		formspec = spacetraveltechnology.get_fuel_generator_inactive_formspec();
+		swap_node(pos, "spacetraveltechnology:fuel_generator");
 		-- stop timer on the inactive generator
-		minetest.get_node_timer(pos):stop()
-		meta:set_int("timer_elapsed", 0)
+		minetest.get_node_timer(pos):stop();
+		meta:set_int("timer_elapsed", 0);
 	end
 
 	-- Mark producing power if active
 	if (active) then
-		local producingPower = meta:get_int(metaProducingPowerRate);
-		meta:set_int(spacetraveltechnology.energy_production_left_meta, producingPower);
-		meta:set_int(spacetraveltechnology.energy_production_initial_meta, producingPower);
+		local maxProducingPower = meta:get_int(metaProducingPowerRate);
+		local producedPower = math.floor(maxProducingPower * burningTime / elapsed);
+		meta:set_int(spacetraveltechnology.energy_production_left_meta, producedPower);
+		meta:set_int(spacetraveltechnology.energy_production_initial_meta, producedPower);
 	else
 		meta:set_int(spacetraveltechnology.energy_production_left_meta, 0);
 		meta:set_int(spacetraveltechnology.energy_production_initial_meta, 0);
@@ -186,11 +151,11 @@ local function fuel_generator_node_timer(pos, elapsed)
 
 	local infotext
 	if active then
-		infotext = S("Fuel Generator active")
+		infotext = S("Fuel Generator active");
 	else
-		infotext = S("Fuel Generator inactive")
+		infotext = S("Fuel Generator inactive");
 	end
-	infotext = infotext .. "\n" .. S("(Fuel: @1)", fuel_state)
+	infotext = infotext .. "\n" .. S("(Fuel: @1)", fuel_state);
 
 	--
 	-- Set meta values
@@ -200,7 +165,7 @@ local function fuel_generator_node_timer(pos, elapsed)
 	meta:set_string("formspec", formspec)
 	meta:set_string("infotext", infotext)
 
-	return result
+	return active;
 end
 
 minetest.register_node("spacetraveltechnology:fuel_generator", {
@@ -238,14 +203,14 @@ minetest.register_node("spacetraveltechnology:fuel_generator", {
 	
 	on_metadata_inventory_put = function(pos)
 		-- start timer function, it will sort out whether furnace can burn or not.
-		minetest.get_node_timer(pos):start(1.0)
+		minetest.get_node_timer(pos):start(0.5)
 	end,
 	on_metadata_inventory_take = function(pos)
 		-- check whether the furnace is empty or not.
-		minetest.get_node_timer(pos):start(1.0)
+		minetest.get_node_timer(pos):start(0.5)
 	end,
 	on_metadata_inventory_move = function(pos)
-		minetest.get_node_timer(pos):start(1.0)
+		minetest.get_node_timer(pos):start(0.5)
 	end,
 	
 	on_blast = function(pos)
