@@ -100,26 +100,27 @@ local function electric_furnace_node_timer(pos, elapsed)
         end
     end
 
+	local continueTimer = true;
     if srclist and srclist[1]:is_empty() then
 		src_time = 0;
-        minetest.get_node_timer(pos):stop();
+        continueTimer = false;
 	end
 
-    local formspec
-	local item_state
-	local item_percent = 0
+    local formspec;
+	local item_state;
+	local item_percent = 0;
 	if cookable then
 		item_percent = math.floor(src_time / cooked.time * 100)
 		if dst_full then
-			item_state = S("100% (output full)")
+			item_state = S("100% (output full)");
 		else
-			item_state = S("@1%", item_percent)
+			item_state = S("@1%", item_percent);
 		end
 	else
 		if srclist and not srclist[1]:is_empty() then
-			item_state = S("Not cookable")
+			item_state = S("Not cookable");
 		else
-			item_state = S("Empty")
+			item_state = S("Empty");
 		end
 	end
 
@@ -134,20 +135,20 @@ local function electric_furnace_node_timer(pos, elapsed)
 
 	local infotext
 	if active then
-		infotext = S("Furnace active")
+		infotext = S("Furnace active");
 	else
-		infotext = S("Furnace inactive")
+		infotext = S("Furnace inactive");
 	end
-	infotext = infotext .. "\n" .. S("(Item: @1)", item_state)
+	infotext = infotext .. "\n" .. S("(Item: @1)", item_state);
 
 	--
 	-- Set meta values
 	--
-	meta:set_float("src_time", src_time)
-	meta:set_string("formspec", formspec)
-	meta:set_string("infotext", infotext)
+	meta:set_float("src_time", src_time);
+	meta:set_string("formspec", formspec);
+	meta:set_string("infotext", infotext);
 
-	return true;
+	return continueTimer;
 end
 
 minetest.register_node("spacetraveltechnology:electric_furnace", {
@@ -172,8 +173,6 @@ minetest.register_node("spacetraveltechnology:electric_furnace", {
 		local inv = meta:get_inventory();
 		inv:set_size('src', 1);
         inv:set_size('dst', 1);
-		
-        minetest.get_node_timer(pos):start(0.5);
 
 		spacetraveltechnology.energy_functions.update_cable_connections_on_construct(pos);
 
@@ -184,14 +183,14 @@ minetest.register_node("spacetraveltechnology:electric_furnace", {
 	
 	on_metadata_inventory_put = function(pos)
 		-- start timer function, it will sort out whether furnace can burn or not.
-		minetest.get_node_timer(pos):start(1.0)
+		minetest.get_node_timer(pos):start(0.5)
 	end,
 	on_metadata_inventory_take = function(pos)
 		-- check whether the furnace is empty or not.
-		minetest.get_node_timer(pos):start(1.0)
+		minetest.get_node_timer(pos):start(0.5)
 	end,
 	on_metadata_inventory_move = function(pos)
-		minetest.get_node_timer(pos):start(1.0)
+		minetest.get_node_timer(pos):start(0.5)
 	end,
 	
 	on_blast = function(pos)
