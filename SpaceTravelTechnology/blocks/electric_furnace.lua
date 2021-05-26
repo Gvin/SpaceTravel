@@ -65,6 +65,14 @@ local function tryConsumeEnergy(pos)
     return spacetraveltechnology.energy_functions.try_consume_energy(pos, powerRequiredToWork, false) == powerRequiredToWork;
 end
 
+local function getFurnaceRecipe(items)
+    if (items == nil or items:get_count() == 0) then
+        return;
+    end
+
+    return spacetravelcore.get_process_recipe(spacetravelcore.recipe_types.cooking, items:get_name());
+end
+
 local function electric_furnace_node_timer(pos, elapsed)
     local meta = minetest.get_meta(pos)
 
@@ -72,30 +80,35 @@ local function electric_furnace_node_timer(pos, elapsed)
 
 	local inv = meta:get_inventory();
 	local srclist = inv:get_list("src");
+    local srcStack = inv:get_stack("src", 1);
 	local dst_full = false;
 
-    local cooked, aftercooked = minetest.get_craft_result({method = "cooking", width = 1, items = srclist})
-    local cookable = cooked.time ~= 0;
+    local recipe = getFurnaceRecipe(srcStack);
+
+    local outputStack;
+    if (recipe ~= nil) then
+        outputStack = ItemStack({ name = recipe.output_name, count = recipe.output_count });
+    end
+    local processable = recipe ~= nil;
 
     local active = false;
 
-    if cookable then
+    if processable then
         local energyConsumed = tryConsumeEnergy(pos);
         if (energyConsumed) then
             active = true;
             src_time = src_time + elapsed;
-            if src_time >= cooked.time then
+            if src_time >= recipe.time then
                 -- Place result in dst list if possible
-                if inv:room_for_item("dst", cooked.item) then
-                    inv:add_item("dst", cooked.item)
-                    inv:set_stack("src", 1, aftercooked.items[1])
-                    src_time = src_time - cooked.time
+                if inv:room_for_item("dst", outputStack) then
+                    inv:add_item("dst", outputStack);
+
+                    local stackToRemove = ItemStack({ name = recipe.input_name, count = 1 });
+                    inv:remove_item("src", stackToRemove);
+                    src_time = src_time - recipe.time
                 else
                     dst_full = true
                 end
-                -- Play cooling sound
-                minetest.sound_play("default_cool_lava",
-                    {pos = pos, max_hear_distance = 16, gain = 0.1}, true)
             end
         end
     end
@@ -109,8 +122,8 @@ local function electric_furnace_node_timer(pos, elapsed)
     local formspec;
 	local item_state;
 	local item_percent = 0;
-	if cookable then
-		item_percent = math.floor(src_time / cooked.time * 100)
+	if processable then
+		item_percent = math.floor(src_time / recipe.time * 100)
 		if dst_full then
 			item_state = S("100% (output full)");
 		else
@@ -118,7 +131,7 @@ local function electric_furnace_node_timer(pos, elapsed)
 		end
 	else
 		if srclist and not srclist[1]:is_empty() then
-			item_state = S("Not cookable");
+			item_state = S("Cannot process");
 		else
 			item_state = S("Empty");
 		end
