@@ -56,7 +56,69 @@ local function get_navigation_computer_configuration_formspec(shipId, shipTitle,
         "button[0.2,9;2,1;"..configurationSaveButton..";Save]";
 end
 
-local function getMapGridImage(data, currentDirection)
+local function cellsContainObject(cells, objectType)
+    for _, cell in pairs(cells) do
+        if (cell.type == "object" and cell.object ~= nil and cell.object.type == objectType) then
+            return true;
+        end
+    end
+    return false;
+end
+
+local function cellsContainMultipleObjects(cells)
+    local objectFound = false;
+    for _, cell in pairs(cells) do
+        if (cell.type == "object" and cell.object ~= nil) then
+            if (objectFound) then
+                return true;
+            else
+                objectFound = true;
+            end
+        end
+    end
+    return false;
+end
+
+local function cellsContainSelf(cells)
+    for _, cell in pairs(cells) do
+        if (cell.type == "object" and cell.object ~= nil and cell.object.id == "self") then
+            return true;
+        end
+    end
+    return false;
+end
+
+local function cellsContainBorders(cells)
+    local bordersCount = 0;
+    for _, cell in pairs(cells) do
+        if (cell.type == "borders") then
+            bordersCount = bordersCount + 1;
+        end
+    end
+    return bordersCount / #cells >= 0.5;
+end
+
+local function getMapGridImageMulticells(cells)
+    local resultImage = "spacemap_empty.png";
+
+    if (cellsContainSelf(cells)) then -- If cells contain current ship
+        resultImage = resultImage.."^spacemap_borders.png^spacemap_self.png";
+    elseif (cellsContainObject(cells, spacetravelcore.space_object_types.ship)) then -- If cells contain ship
+        resultImage = resultImage.."^spacemap_borders.png^spacemap_ship.png";
+    elseif (cellsContainObject(cells, spacetravelcore.space_object_types.station)) then -- If cells contain station
+        resultImage = resultImage.."^spacemap_borders.png^spacemap_station.png";
+    elseif (cellsContainBorders(cells)) then -- No objects, just borders
+        resultImage = resultImage.."^spacemap_borders.png";
+    end
+
+    if (cellsContainMultipleObjects(cells)) then -- More than 1 object
+        resultImage = resultImage.."^spacemap_multi.png";
+    end
+
+    return resultImage;
+end
+
+local function getMapGridImageSingleCell(data, currentDirection)
     if (data.type == "empty") then
         return "spacemap_empty.png";
     elseif (data.type == "borders") then
@@ -88,7 +150,15 @@ local function getMapGridImage(data, currentDirection)
     return "spacemap_empty.png^spacemap_unknown.png";
 end
 
-local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone)
+local function getMapGridImage(cells, currentDirection, zoomLevel)
+    if (zoomLevel == 1) then -- No zoom
+        return getMapGridImageSingleCell(cells[1], currentDirection);
+    else
+        return getMapGridImageMulticells(cells);
+    end
+end
+
+local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)
     local leftShift = 1;
     local topShift = 2;
     local imageSize = 0.5;
@@ -101,7 +171,7 @@ local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone)
             local btnX = leftShift + x  * sizeMultiplierX;
             local btnY = topShift + y * sizeMultiplierY;
             
-            local image = getMapGridImage(areaGrid[x][y], currentDirection);
+            local image = getMapGridImage(areaGrid[x][y], currentDirection, zoomLevel);
 
             local selected = selectedZone ~= nil and selectedZone.x == x and selectedZone.y == y;
             if (selected) then
@@ -116,16 +186,69 @@ local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone)
     return result;
 end
 
+local function countObjects(zone)
+    local result = 0;
+    for _, cell in pairs(zone) do
+        if (cell.type == "object") then
+            result = result + 1;
+        end
+    end
+    return result;
+end
+
+local function calculateZoneSize(zone)
+    local minX = zone[1].position.x;
+    local maxX = minX;
+    local minZ = zone[1].position.z;
+    local maxZ = minZ;
+    for _, cell in pairs(zone) do
+        if (cell.position.x < minX) then
+            minX = cell.position.x;
+        end
+        if (cell.position.x > maxX) then
+            maxX = cell.position.x;
+        end
+        if (cell.position.z < minZ) then
+            minZ = cell.position.z;
+        end
+        if (cell.position.z > maxZ) then
+            maxZ = cell.position.z;
+        end
+    end
+
+    return minX, maxX, minZ, maxZ;
+end
+
 local function get_selected_zone_formspec(areaGrid, selectedZone)
     if (selectedZone == nil) then
         return "";
     end
 
-    local cell = areaGrid[selectedZone.x][selectedZone.y];
+    local zone = areaGrid[selectedZone.x][selectedZone.y];
+    local minX, maxX, minZ, maxZ = calculateZoneSize(zone);
+
+    local sizeTextX = "";
+    if (minX == maxX) then
+        sizeTextX = sizeTextX.."X="..minX;
+    else
+        sizeTextX = sizeTextX.."X=["..minX..";"..maxX.."]";
+    end
+
+    local sizeTextZ = "";
+    if (minZ == maxZ) then
+        sizeTextZ = sizeTextZ.."Z="..minZ;
+    else
+        sizeTextZ = sizeTextZ.."Z=["..minZ..";"..maxZ.."]";
+    end
+
+    sizeTextX = minetest.formspec_escape(sizeTextX);
+    sizeTextZ = minetest.formspec_escape(sizeTextZ);
 
     return
         "label[8, 1.2;Selection:]"..
-        "label[8, 1.7;X="..cell.position.x.." | Z="..cell.position.z.."]";
+        "label[8, 1.7;Objects: "..countObjects(zone).."]"..
+        "label[8, 2.3;"..sizeTextX.."]"..
+        "label[8, 2.8;"..sizeTextZ.."]";
 end
 
 local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)
@@ -136,7 +259,7 @@ local function get_navigation_computer_control_formspec(areaGrid, currentDirecti
         "label[0.2,1.2;Control]"..
         "label[0.2,1.7;Rotation: "..currentDirection.."]"..
         
-        get_map_grid_formspec(areaGrid, currentDirection, selectedZone)..
+        get_map_grid_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)..
 
         "button[0.5,9.5;1.5,1;"..controlZoomInBtn..";Zoom +]"..
         "button[1.8,9.5;1.5,1;"..controlZoomOutBtn..";Zoom -]"..
@@ -186,11 +309,11 @@ local function findGridButtonEvent(fields)
 end
 
 local function processControlTabEvents(meta, fields)
-    if (fieldsContainButton(fields, controlZoomInBtn)) then -- Zoom +
+    if (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
         meta:set_int(metaZoomStep, math.min(#zoomSteps, zoomStep + 1));
-    elseif (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
+    elseif (fieldsContainButton(fields, controlZoomInBtn)) then -- Zoom +
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
         meta:set_int(metaZoomStep, math.max(1, zoomStep - 1));
@@ -250,7 +373,6 @@ local function isPointInBorders(position, obj)
         position.z >= minZ and position.z <= maxZ;
 end
 
-
 local function getGridRecord(position, objects, corePosition)
     local result = {
         type = "empty",
@@ -296,8 +418,7 @@ local function rotateGrid(grid, coreDirection)
     return data;
 end
 
-local function buildAreaGrid(meta, corePosition, coreDirection, coreMeta)
-    local scanRadius = 10;
+local function fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanRadius)
     local left = corePosition.x - scanRadius;
     local right = corePosition.x + scanRadius;
     local top = corePosition.z - scanRadius;
@@ -320,6 +441,41 @@ local function buildAreaGrid(meta, corePosition, coreDirection, coreMeta)
     end
 
     return rotateGrid(grid, coreDirection);
+end
+
+local function buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLevel)
+
+    local gridRadius = 10;
+    local scanSize = gridRadius * zoomLevel;
+    local dataGrid = fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanSize);
+    -- In blocs zoomLevel X zoomLevel
+    local grid = {};
+
+    for gridX = 1, gridRadius * 2 + 1 do
+        table.insert(grid, {});
+        local dataGridX = 1 + (gridX - 1) * zoomLevel;
+        for gridY = 1, gridRadius * 2 + 1 do
+            table.insert(grid[gridX], {});
+            local dataGridY = 1 + (gridY - 1) * zoomLevel;
+
+            for x = dataGridX, dataGridX + zoomLevel - 1 do
+                for y = dataGridY, dataGridY + zoomLevel - 1 do
+                    if (x <= #dataGrid and y <= #dataGrid[x]) then
+                        local cell = dataGrid[x][y];
+                        table.insert(grid[gridX][gridY], cell);
+                    end
+                end
+            end
+        end
+    end
+
+    -- local file = io.open(minetest.get_worldpath().."/grid.txt", "w")
+    -- if file then
+    --     file:write(minetest.serialize(grid))
+    --     file:close()
+    -- end
+
+    return grid;
 end
 
 local function convertDirection(dir)
@@ -346,7 +502,7 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
         zoomStep = math.max(1, zoomStep);
         local zoomLevel = zoomSteps[zoomStep];
 
-        local areaGrid = buildAreaGrid(meta, corePosition, coreDirection, coreMeta);
+        local areaGrid = buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLevel);
         meta:set_string(metaAreaGrid, minetest.serialize(areaGrid));
         local selectedZone = meta_get_object(meta, metaSelectedZone);
         
