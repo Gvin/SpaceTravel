@@ -8,3 +8,4 @@ spacetravelcore = {};
 spacetravelcore.get_translator = S;
 
 dofile(modPath.."/register_recipes.lua");
+dofile(modPath.."/register_space_objects.lua");
