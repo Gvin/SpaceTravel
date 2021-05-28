@@ -3,6 +3,7 @@ local metaMenuTab = "spacetravelinit:menu_tab";
 local metaAreaGrid = "spacetravelinit:area_grid";
 local metaSelectedZone = "spacetravelinit:selected_zone";
 local metaZoomStep = "spacetravelinit:zoom_step";
+local metaMapShift = "spacetravelinit:map_shift";
 
 local tabNameControl = "control";
 local tabNameConfig = "config";
@@ -19,6 +20,11 @@ local configurationTitleField = "config_TitleField";
 local controlZoomInBtn = "controlZoomIn";
 local controlZoomOutBtn = "controlZoomOut";
 
+local controlMapShiftLeftBtn = "controlMapShiftLeftBtn";
+local controlMapShiftRightBtn = "controlMapShiftRightBtn";
+local controlMapShiftUpBtn = "controlMapShiftUpBtn";
+local controlMapShiftDownBtn = "controlMapShiftDownBtn";
+
 local gridButtonPrefix = "gridBtn_";
 
 local zoomSteps = {
@@ -26,6 +32,10 @@ local zoomSteps = {
     3,
     5
 };
+
+local mapDisplaySize = 21;
+local gridRadius = 20;
+local defaultMapShift = math.floor(gridRadius - mapDisplaySize / 2);
 
 local function get_navigation_computer_inactive_formspec()
     return "size[15,10]"..
@@ -158,7 +168,7 @@ local function getMapGridImage(cells, currentDirection, zoomLevel)
     end
 end
 
-local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)
+local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift)
     local leftShift = 1;
     local topShift = 2;
     local imageSize = 0.5;
@@ -166,20 +176,24 @@ local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone, z
     local sizeMultiplierX = 0.28;
     local result = "";
 
-    for x = 1, #areaGrid do
-        for y = 1, #areaGrid[x] do
-            local btnX = leftShift + x  * sizeMultiplierX;
-            local btnY = topShift + y * sizeMultiplierY;
-            
-            local image = getMapGridImage(areaGrid[x][y], currentDirection, zoomLevel);
+    for indexX = 1, mapDisplaySize do
+        for indexY = 1, mapDisplaySize do
+            local x = indexX + mapShift.x;
+            local y = indexY + mapShift.y;
+            if (x <= #areaGrid and y <= #areaGrid[x]) then
+                local btnX = leftShift + indexX  * sizeMultiplierX;
+                local btnY = topShift + indexY * sizeMultiplierY;
+                
+                local image = getMapGridImage(areaGrid[x][y], currentDirection, zoomLevel);
 
-            local selected = selectedZone ~= nil and selectedZone.x == x and selectedZone.y == y;
-            if (selected) then
-                image = image.."^spacemap_selected.png";
+                local selected = selectedZone ~= nil and selectedZone.x == x and selectedZone.y == y;
+                if (selected) then
+                    image = image.."^spacemap_selected.png";
+                end
+
+                local name = gridButtonPrefix..x.."_"..y;
+                result = result.."image_button["..btnX..","..btnY..";"..imageSize..","..imageSize..";"..image..";"..name..";]";
             end
-
-            local name = gridButtonPrefix..x.."_"..y;
-            result = result.."image_button["..btnX..","..btnY..";"..imageSize..","..imageSize..";"..image..";"..name..";]";
         end
     end
 
@@ -251,15 +265,20 @@ local function get_selected_zone_formspec(areaGrid, selectedZone)
         "label[8, 2.8;"..sizeTextZ.."]";
 end
 
-local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)
+local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift)
     return 
         "size[15,10]"..
         getTabsButtons()..
 
         "label[0.2,1.2;Control]"..
         "label[0.2,1.7;Rotation: "..currentDirection.."]"..
+
+        "button[0.2, 2.2; 0.5, 6;"..controlMapShiftLeftBtn..";<]"..
+        "button[7.5, 2.2; 0.5, 6;"..controlMapShiftRightBtn..";>]"..
+        "button[3.5, 1.7; 2, 1;"..controlMapShiftUpBtn..";^]"..
+        "button[3.5, 9; 2, 1;"..controlMapShiftDownBtn..";V]"..
         
-        get_map_grid_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)..
+        get_map_grid_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift)..
 
         "button[0.5,9.5;1.5,1;"..controlZoomInBtn..";Zoom +]"..
         "button[1.8,9.5;1.5,1;"..controlZoomOutBtn..";Zoom -]"..
@@ -317,6 +336,50 @@ local function processControlTabEvents(meta, fields)
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
         meta:set_int(metaZoomStep, math.max(1, zoomStep - 1));
+    elseif (fieldsContainButton(fields, controlMapShiftLeftBtn)) then -- Map Shift Left
+        local mapShift = meta_get_object(meta, metaMapShift);
+        if (mapShift == nil) then
+            mapShift = {
+                x = 0,
+                y = 0
+            };
+        end
+        mapShift.x = math.max(0, mapShift.x - 1);
+        meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        minetest.log(minetest.serialize(mapShift))
+    elseif (fieldsContainButton(fields, controlMapShiftRightBtn)) then -- Map Shift Right
+        local mapShift = meta_get_object(meta, metaMapShift);
+        if (mapShift == nil) then
+            mapShift = {
+                x = 0,
+                y = 0
+            };
+        end
+        mapShift.x = mapShift.x + 1;
+        meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        minetest.log(minetest.serialize(mapShift))
+    elseif (fieldsContainButton(fields, controlMapShiftUpBtn)) then -- Map Shift Up
+        local mapShift = meta_get_object(meta, metaMapShift);
+        if (mapShift == nil) then
+            mapShift = {
+                x = 0,
+                y = 0
+            };
+        end
+        mapShift.y = math.max(0, mapShift.y - 1);
+        meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        minetest.log(minetest.serialize(mapShift))
+    elseif (fieldsContainButton(fields, controlMapShiftDownBtn)) then -- Map Shift Down
+        local mapShift = meta_get_object(meta, metaMapShift);
+        if (mapShift == nil) then
+            mapShift = {
+                x = 0,
+                y = 0
+            };
+        end
+        mapShift.y = mapShift.y + 1;
+        meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        minetest.log(minetest.serialize(mapShift))
     else -- Grid click
         local gridButtonEvent = findGridButtonEvent(fields);
         if (gridButtonEvent == nil) then
@@ -444,8 +507,6 @@ local function fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanRa
 end
 
 local function buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLevel)
-
-    local gridRadius = 10;
     local scanSize = gridRadius * zoomLevel;
     local dataGrid = fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanSize);
     -- In blocs zoomLevel X zoomLevel
@@ -505,8 +566,25 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
         local areaGrid = buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLevel);
         meta:set_string(metaAreaGrid, minetest.serialize(areaGrid));
         local selectedZone = meta_get_object(meta, metaSelectedZone);
+
+        local mapShift = meta_get_object(meta, metaMapShift);
+        if (mapShift == nil) then
+            mapShift = {
+                x = defaultMapShift,
+                y = defaultMapShift
+            };
+            meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        end
+        if (areaGrid ~= nil and mapShift.x > #areaGrid - mapDisplaySize) then
+            mapShift.x = #areaGrid - mapDisplaySize;
+            meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        end
+        if (areaGrid ~= nil and mapShift.y > #areaGrid - mapDisplaySize) then
+            mapShift.y = #areaGrid - mapDisplaySize;
+            meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        end  
         
-        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel);
+        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift);
 
     elseif (menuTabName == tabNameConfig) then
         local shipId = coreMeta:get_string("spacetravelinit:ship_core_id");
