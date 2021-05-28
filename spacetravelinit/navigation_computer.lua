@@ -2,6 +2,7 @@
 local metaMenuTab = "spacetravelinit:menu_tab";
 local metaAreaGrid = "spacetravelinit:area_grid";
 local metaSelectedZone = "spacetravelinit:selected_zone";
+local metaZoomStep = "spacetravelinit:zoom_step";
 
 local tabNameControl = "control";
 local tabNameConfig = "config";
@@ -15,7 +16,16 @@ local configurationSizeYField = "config_sizeYField";
 local configurationSizeZField = "config_sizeZField";
 local configurationTitleField = "config_TitleField";
 
+local controlZoomInBtn = "controlZoomIn";
+local controlZoomOutBtn = "controlZoomOut";
+
 local gridButtonPrefix = "gridBtn_";
+
+local zoomSteps = {
+    1,
+    3,
+    5
+};
 
 local function get_navigation_computer_inactive_formspec()
     return "size[15,10]"..
@@ -118,7 +128,7 @@ local function get_selected_zone_formspec(areaGrid, selectedZone)
         "label[8, 1.7;X="..cell.position.x.." | Z="..cell.position.z.."]";
 end
 
-local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone)
+local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel)
     return 
         "size[15,10]"..
         getTabsButtons()..
@@ -127,6 +137,10 @@ local function get_navigation_computer_control_formspec(areaGrid, currentDirecti
         "label[0.2,1.7;Rotation: "..currentDirection.."]"..
         
         get_map_grid_formspec(areaGrid, currentDirection, selectedZone)..
+
+        "button[0.5,9.5;1.5,1;"..controlZoomInBtn..";Zoom +]"..
+        "button[1.8,9.5;1.5,1;"..controlZoomOutBtn..";Zoom -]"..
+        "label[3.5,9.7;1X"..zoomLevel.."]"..
         
         get_selected_zone_formspec(areaGrid, selectedZone);
 end
@@ -172,23 +186,33 @@ local function findGridButtonEvent(fields)
 end
 
 local function processControlTabEvents(meta, fields)
-    local gridButtonEvent = findGridButtonEvent(fields);
-    if (gridButtonEvent == nil) then
-        return;
+    if (fieldsContainButton(fields, controlZoomInBtn)) then -- Zoom +
+        local zoomStep = meta:get_int(metaZoomStep);
+        zoomStep = math.max(1, zoomStep);
+        meta:set_int(metaZoomStep, math.min(#zoomSteps, zoomStep + 1));
+    elseif (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
+        local zoomStep = meta:get_int(metaZoomStep);
+        zoomStep = math.max(1, zoomStep);
+        meta:set_int(metaZoomStep, math.max(1, zoomStep - 1));
+    else -- Grid click
+        local gridButtonEvent = findGridButtonEvent(fields);
+        if (gridButtonEvent == nil) then
+            return;
+        end
+
+        local areaGrid = meta_get_object(meta, metaAreaGrid);
+        if (areaGrid == nil) then
+            return;
+        end
+
+        local indexesPart = string.sub(gridButtonEvent, string.len(gridButtonPrefix) + 1, string.len(gridButtonEvent));
+
+        local separatorIndex = string.find(indexesPart, "%_");
+        local x = string.sub(indexesPart, 1, separatorIndex - 1);
+        local y = string.sub(indexesPart, separatorIndex + 1, string.len(indexesPart));
+
+        meta:set_string(metaSelectedZone, minetest.serialize({x = tonumber(x), y = tonumber(y)}));
     end
-
-    local areaGrid = meta_get_object(meta, metaAreaGrid);
-    if (areaGrid == nil) then
-        return;
-    end
-
-    local indexesPart = string.sub(gridButtonEvent, string.len(gridButtonPrefix) + 1, string.len(gridButtonEvent));
-
-    local separatorIndex = string.find(indexesPart, "%_");
-    local x = string.sub(indexesPart, 1, separatorIndex - 1);
-    local y = string.sub(indexesPart, separatorIndex + 1, string.len(indexesPart));
-
-    meta:set_string(metaSelectedZone, minetest.serialize({x = tonumber(x), y = tonumber(y)}));
 end
 
 local function navigation_computer_receive_fields(position, formname, fields, sender)
@@ -317,11 +341,16 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
     if (menuTabName == nil or menuTabName == tabNameControl) then
         local coreNode = minetest.get_node(corePosition);
         local coreDirection = convertDirection(coreNode.param2);
+
+        local zoomStep = meta:get_int(metaZoomStep);
+        zoomStep = math.max(1, zoomStep);
+        local zoomLevel = zoomSteps[zoomStep];
+
         local areaGrid = buildAreaGrid(meta, corePosition, coreDirection, coreMeta);
         meta:set_string(metaAreaGrid, minetest.serialize(areaGrid));
         local selectedZone = meta_get_object(meta, metaSelectedZone);
         
-        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone);
+        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel);
 
     elseif (menuTabName == tabNameConfig) then
         local shipId = coreMeta:get_string("spacetravelinit:ship_core_id");
