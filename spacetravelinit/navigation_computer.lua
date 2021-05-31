@@ -12,18 +12,22 @@ local tabButtonControl = "controlBtn";
 local tabButtonConfig = "configBtn";
 
 local configurationSaveButton = "config_saveBtn";
-local configurationSizeXField = "config_sizeXField";
-local configurationSizeYField = "config_sizeYField";
-local configurationSizeZField = "config_sizeZField";
+local configurationSizeLeftField = "config_sizeLeftField";
+local configurationSizeRightField = "config_sizeRightField";
+local configurationSizeFrontField = "config_sizeFrontField";
+local configurationSizeBackField = "config_sizeBackField";
+local configurationSizeUpField = "config_sizeUpField";
+local configurationSizeDownField = "config_sizeDownField";
+
 local configurationTitleField = "config_TitleField";
 
-local controlZoomInBtn = "controlZoomIn";
-local controlZoomOutBtn = "controlZoomOut";
+local controlZoomInBtn = "control_ZoomIn";
+local controlZoomOutBtn = "control_ZoomOut";
 
-local controlMapShiftLeftBtn = "controlMapShiftLeftBtn";
-local controlMapShiftRightBtn = "controlMapShiftRightBtn";
-local controlMapShiftUpBtn = "controlMapShiftUpBtn";
-local controlMapShiftDownBtn = "controlMapShiftDownBtn";
+local controlMapShiftLeftBtn = "control_MapShiftLeftBtn";
+local controlMapShiftRightBtn = "control_MapShiftRightBtn";
+local controlMapShiftUpBtn = "control_MapShiftUpBtn";
+local controlMapShiftDownBtn = "control_MapShiftDownBtn";
 
 local gridButtonPrefix = "gridBtn_";
 
@@ -57,11 +61,16 @@ local function get_navigation_computer_configuration_formspec(shipId, shipTitle,
 
         "label[4,1.2;Ship ID: "..shipId.."]"..
 
-        "field[0.5,3;1.5,1;"..configurationSizeXField..";Size X;"..size.x.."]"..
-        "field[0.5,4.5;1.5,1;"..configurationSizeYField..";Size Y;"..size.y.."]"..
-        "field[0.5,6;1.5,1;"..configurationSizeZField..";Size Z;"..size.z.."]"..
+        "field[0.5,3;1.5,1;"..configurationSizeLeftField..";Left;"..size.left.."]"..
+        "field[3.5,3;1.5,1;"..configurationSizeRightField..";Right;"..size.right.."]"..
+
+        "field[0.5,5;1.5,1;"..configurationSizeFrontField..";Front;"..size.front.."]"..
+        "field[3.5,5;1.5,1;"..configurationSizeBackField..";Back;"..size.back.."]"..
+
+        "field[0.5,7;1.5,1;"..configurationSizeUpField..";Up;"..size.up.."]"..
+        "field[3.5,7;1.5,1;"..configurationSizeDownField..";Down;"..size.down.."]"..
         
-        "field[4,3;3,1;"..configurationTitleField..";Title;"..shipTitle.."]"..
+        "field[6,3;3,1;"..configurationTitleField..";Title;"..shipTitle.."]"..
         
         "button[0.2,9;2,1;"..configurationSaveButton..";Save]";
 end
@@ -304,17 +313,24 @@ local function fieldsContainButton(fields, buttonName)
     return false;
 end
 
-local function processConfigTabEvents(coreMeta, fields)
+local function processConfigTabEvents(corePosition, coreMeta, fields)
     if (fieldsContainButton(fields, configurationSaveButton)) then -- Save button
-        local size = {};
-        size.x = fields[configurationSizeXField];
-        size.y = fields[configurationSizeXField];
-        size.z = fields[configurationSizeXField];
+        local size = {
+            left = fields[configurationSizeLeftField],
+            right = fields[configurationSizeRightField],
+            front = fields[configurationSizeFrontField],
+            back = fields[configurationSizeBackField],
+            up = fields[configurationSizeUpField],
+            down = fields[configurationSizeDownField]
+        };
 
         local title = fields[configurationTitleField];
 
         coreMeta:set_string("spacetravelinit:ship_core_size", minetest.serialize(size));
         coreMeta:set_string("spacetravelinit:ship_core_title", title);
+
+        local id = coreMeta:get_string("spacetravelinit:ship_core_id");
+        spacetravelcore.update_space_object(id, title, corePosition, size);
     end
 end
 
@@ -420,20 +436,16 @@ local function navigation_computer_receive_fields(position, formname, fields, se
     if (currentTab == tabNameControl) then
         processControlTabEvents(meta, fields);
     elseif (currentTab == tabNameConfig) then -- Configuration tab events
-        processConfigTabEvents(coreMeta, fields);
+        processConfigTabEvents(corePosition, coreMeta, fields);
     end
 
     minetest.log("formname="..formname.."; fields="..minetest.serialize(fields));
 end
 
 local function isPointInBorders(position, obj)
-    local minX = obj.core_position.x - obj.size.x;
-    local maxX = obj.core_position.x + obj.size.x;
-    local minZ = obj.core_position.z - obj.size.z;
-    local maxZ = obj.core_position.z + obj.size.z;
     return
-        position.x >= minX and position.x <= maxX and
-        position.z >= minZ and position.z <= maxZ;
+        position.x >= obj.cube.min_x and position.x <= obj.cube.max_x and
+        position.z >= obj.cube.min_z and position.z <= obj.cube.max_z;
 end
 
 local function getGridRecord(position, objects, corePosition)

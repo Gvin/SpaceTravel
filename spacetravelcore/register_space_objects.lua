@@ -1,4 +1,5 @@
 spacetravelcore.space_objects = {};
+spacetravelcore.space_objects_cubes = {};
 
 spacetravelcore.space_object_types = {};
 spacetravelcore.space_object_types.ship = "spacetravelcore:space_object_types.ship";
@@ -14,15 +15,76 @@ local function findSpaceObject(id)
     return nil;
 end
 
+local function calculateObjectCube(position, size)
+    local node = minetest.get_node(position);
+    local dir = node.param2;
+
+    local cube = {};
+    cube.min_y = position.y - size.down;
+    cube.max_y = position.y + size.up;
+
+    if (dir == 3) then -- X+
+        cube.min_z = position.z - size.right;
+        cube.max_z = position.z + size.left;
+
+        cube.min_x = position.x - size.back;
+        cube.max_x = position.x + size.front;
+    elseif (dir == 1) then -- X-
+        cube.min_z = position.z - size.left;
+        cube.max_z = position.z + size.right;
+
+        cube.min_x = position.x - size.front;
+        cube.max_x = position.x + size.back;
+    elseif (dir == 2) then -- Z+
+        cube.min_z = position.z - size.back;
+        cube.max_z = position.z + size.front;
+
+        cube.min_x = position.x - size.left;
+        cube.max_x = position.x + size.right;
+    elseif (dir == 0) then -- Z-
+        cube.min_z = position.z - size.front;
+        cube.max_z = position.z + size.back;
+
+        cube.min_x = position.x - size.right;
+        cube.max_x = position.x + size.left;
+    else
+        error("Unknown core direction: "..dir);
+    end
+
+    return cube;
+end
+
 -- objectData: {type, id, title, core_position, core_direction, size}
 spacetravelcore.register_space_object = function(objectData)
+    if (objectData == nil) then
+        error("Object data is nil.", 2);
+    end
+    if (objectData.id == nil or string.len(objectData.id) == 0) then
+        error("Object id is nil or empty.", 2);
+    end
     local existingObject = findSpaceObject(objectData.id);
     if (existingObject ~= nil) then
         error("Object with the same id is already registered. ID="..objectData.id, 2);
     end
 
     table.insert(spacetravelcore.space_objects, objectData);
+    local cube = calculateObjectCube(objectData.core_position, objectData.size);
+    spacetravelcore.space_objects_cubes[objectData.id] = cube;
+
     minetest.log("Space object registered: "..objectData.id);
+end
+
+spacetravelcore.update_space_object = function(id, title, core_position, size)
+    local obj = findSpaceObject(id);
+    if (obj == nil) then
+        error("Object with such id is not registered. ID="..id, 2);
+    end
+
+    obj.title = title;
+    obj.size = minetest.deserialize(minetest.serialize(size));
+
+    local cube = calculateObjectCube(core_position, size);
+    spacetravelcore.space_objects_cubes[id] = cube;
 end
 
 spacetravelcore.scan_for_objects = function(position, radius)
@@ -36,6 +98,7 @@ spacetravelcore.scan_for_objects = function(position, radius)
             corePos.z >= position.z - radius and
             corePos.z <= position.z + radius) then
                 local objCopy = minetest.deserialize(minetest.serialize(obj));
+                objCopy.cube = spacetravelcore.space_objects_cubes[obj.id];
                 table.insert(result, objCopy);
         end
     end
@@ -59,12 +122,13 @@ spacetravelcore.unregister_space_object = function(objectId)
         return obj.id == objectId;
     end
 
-    local objIndex = findIndex(section, objectIdComparer);
+    local objIndex = findIndex(spacetravelcore.space_objects, objectIdComparer);
     if (objIndex == nil) then
         error("Object with such id is not registered. ID="..objectId, 2);
     end
 
-    table.remove(section, objIndex);
+    table.remove(spacetravelcore.space_objects, objIndex);
+    spacetravelcore.space_objects_cubes[objectId] = nil;
 end
 
 local function createCube(position, size)
@@ -79,8 +143,8 @@ local function createCube(position, size)
 end
 
 local function checkOverlaps(position1, size1, position2, size2)
-    local cube1 = createCube(position1, size1);
-    local cube2 = createCube(position2, size2);
+    local cube1 = calculateObjectCube(position1, size1);
+    local cube2 = calculateObjectCube(position2, size2);
 
     return 
         cube1.max_x >= cube1.min_x and
@@ -92,7 +156,7 @@ local function checkOverlaps(position1, size1, position2, size2)
 end
 
 local function checkContains(position, size, point)
-    local cube = createCube(position, size);
+    local cube = calculateObjectCube(position, size);
 
     return
         point.x >= cube.min_x and

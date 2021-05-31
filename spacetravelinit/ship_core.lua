@@ -1,7 +1,3 @@
-local size = {};
-size.x = 2;
-size.y = 2;
-size.z = 2;
 
 local random = math.random;
 
@@ -11,6 +7,10 @@ local function meta_get_object(meta, name)
         return nil;
     end
     return minetest.deserialize(str);
+end
+
+local function meta_set_object(meta, name, value)
+    meta:set_string(name, minetest.serialize(value));
 end
 
 local function uuid()
@@ -50,9 +50,12 @@ local function registerShipCore(position)
     local size = meta_get_object(meta, "spacetravelinit:ship_core_size");
     if (size == nil) then
         size = {
-            x = 1,
-            y = 1,
-            z = 1
+            left = 1,
+            right = 1,
+            front = 1,
+            back = 1,
+            up = 1,
+            down = 1
         };
     end
 
@@ -67,6 +70,10 @@ local function registerShipCore(position)
         core_direction = direction,
         size = size
     });
+
+    meta:set_string("spacetravelinit:ship_core_id", id);
+    meta:set_string("spacetravelinit:ship_core_title", title);
+    meta_set_object(meta, "spacetravelinit:ship_core_size", size);
 end
 
 local function ship_core_node_timer(position, elapsed)
