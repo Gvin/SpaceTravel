@@ -142,22 +142,17 @@ local function createCube(position, size)
     return cube;
 end
 
-local function checkOverlaps(position1, size1, position2, size2)
-    local cube1 = calculateObjectCube(position1, size1);
-    local cube2 = calculateObjectCube(position2, size2);
-
+local function checkOverlaps(cube1, cube2)
     return 
-        cube1.max_x >= cube1.min_x and
+        cube1.max_x >= cube2.min_x and
         cube1.min_x <= cube2.max_x and
-        cube1.max_y >= cube1.min_y and
+        cube1.max_y >= cube2.min_y and
         cube1.min_y <= cube2.max_y and
-        cube1.max_z >= cube1.min_z and
+        cube1.max_z >= cube2.min_z and
         cube1.min_z <= cube2.max_z;
 end
 
-local function checkContains(position, size, point)
-    local cube = calculateObjectCube(position, size);
-
+local function checkContains(cube, point)
     return
         point.x >= cube.min_x and
         point.x <= cube.max_x and
@@ -167,13 +162,49 @@ local function checkContains(position, size, point)
         point.z <= cube.max_z;
 end
 
-spacetravelships.can_move_to_position = function(targetPosition, size)
+local function shiftCube(cube, delta)
+    return {
+        min_x = cube.min_x + delta.x,
+        max_x = cube.max_x + delta.x,
+        min_y = cube.min_y + delta.y,
+        max_y = cube.max_y + delta.y,
+        min_z = cube.min_z + delta.z,
+        max_z = cube.max_z + delta.z
+    }
+end
+
+
+spacetravelships.can_move_to_position = function(id, targetPosition)
+    local movingObject = findSpaceObject(id);
+    if (movingObject == nil) then
+        error("Space object with such id not found. ID="..id, 2);
+    end
+
+    local cube = spacetravelships.space_objects_cubes[id];
+    local targetCube = shiftCube(cube, {
+        x = targetPosition.x - movingObject.core_position.x,
+        y = targetPosition.y - movingObject.core_position.y,
+        z = targetPosition.z - movingObject.core_position.z
+    });
+
     for _, obj in pairs(spacetravelships.space_objects) do -- for each object
-        if (checkOverlaps(targetPosition, size, obj.core_position, obj.size)) then
+        local objCube = spacetravelships.space_objects_cubes[obj.id];
+        if (checkOverlaps(objCube, targetCube)) then
             return false;
         end
     end
     return true;
+end
+
+-- Gets ship that owns specific node position
+spacetravelships.get_owning_object = function(position)
+    for _, obj in pairs(spacetravelships.space_objects) do -- for each object
+        local objCube = spacetravelships.space_objects_cubes[obj.id];
+        if (checkContains(objCube, position)) then
+            return obj;
+        end
+    end
+    return nil;
 end
 
 local function move_node_and_meta(oldpos, newpos)
@@ -187,35 +218,47 @@ end
 local function move_objects(oldPos, newPos)
     local objects = minetest.get_objects_inside_radius(oldPos, 1);
     for _, obj in pairs(objects) do
-        obj:set_pos(newPos);
+        obj:set_pos({
+            x = newPos.x,
+            z = newPos.z,
+            y = newPos.y + 1 -- to fix player in block teleport
+        });
     end
 end
 
-spacetravelships.move_to_position = function(type, id, core_position, size, targetPosition)
-    if (not spacetravelships.can_move_to_position(targetPosition, size)) then
+spacetravelships.move_to_position = function(id, targetPosition)
+    if (not spacetravelships.can_move_to_position(id, targetPosition)) then
         return false;
     end
 
-    local obj = findSpaceObject(type, id);
-    obj.core_position = targetPosition;
+    local obj = findSpaceObject(id);
+    if (obj == nil) then
+        error("Space object with such id not found. ID="..id, 2);
+    end
 
-    local delta_x = targetPosition.x - core_position.x;
-    local delta_y = targetPosition.y - core_position.y;
-    local delta_z = targetPosition.z - core_position.z;
+    local cube = spacetravelships.space_objects_cubes[id];
+    local delta = {
+        x = targetPosition.x - obj.core_position.x,
+        y = targetPosition.y - obj.core_position.y,
+        z = targetPosition.z - obj.core_position.z
+    };
 
-    local cube = createCube(core_position, size);
+    spacetravelships.unregister_space_object(id);
+
     for x = cube.min_x, cube.max_x do
     for y = cube.min_y, cube.max_y do
     for z = cube.min_z, cube.max_z do
-        local oldPos = {};
-        oldPos.x = x;
-        oldPos.y = y;
-        oldPos.z = z;
+        local oldPos = {
+            x = x,
+            y = y,
+            z = z
+        };
 
-        local newPos = {};
-        newPos.x = x + delta_x;
-        newPos.y = y + delta_y;
-        newPos.z = z + delta_z;
+        local newPos = {
+            x = x + delta.x,
+            y = y + delta.y,
+            z = z + delta.z
+        };
 
         move_node_and_meta(oldPos, newPos);
         move_objects(oldPos, newPos);

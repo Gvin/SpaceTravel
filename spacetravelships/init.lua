@@ -12,7 +12,6 @@ dofile(modPath.."/register_space_objects.lua");
 
 dofile(modPath.."/ship_core.lua");
 dofile(modPath.."/navigation_computer.lua");
-dofile(modPath.."/connection_tuner.lua");
 
 minetest.register_node("spacetravelships:ship_hull_light", {
     description = "Light Ship Hull",

@@ -77,26 +77,6 @@ local function registerShipCore(position)
 end
 
 local function ship_core_node_timer(position, elapsed)
-    -- minetest.log("Moving ship core")
-    -- local targetPosition = {};
-    -- targetPosition.x = position.x;
-    -- targetPosition.z = position.z;
-    -- targetPosition.y = position.y + 20;
-
-    -- if (not registered) then
-    --     minetest.log("Registering space object");
-    --     spacetravelcore.register_space_object(spacetravelcore.space_object_types.ship, {
-    --         id = "test_id1",
-    --         title = "Test Ship",
-    --         core_position = position,
-    --         size = size
-    --     });
-    --     registered = true;
-    -- end
-
-    --local moved = spacetravelcore.move_to_position(spacetravelcore.space_object_types.ship, "test_id1", position, size, targetPosition);
-
-    
     registerShipCore(position);
     return false;
 end
@@ -112,7 +92,7 @@ minetest.register_node(spacetravelships.constants.ship_core_node, {
         "machine.png^ship_core.png",
     },
     paramtype2 = "facedir",
-    groups = {cracky = 2, ["tunable_controllable"] = 1},
+    groups = {cracky = 2},
     is_ground_content = false,
     light_source = 10,
 
