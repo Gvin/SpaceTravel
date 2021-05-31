@@ -196,6 +196,10 @@ spacetravelships.can_move_to_position = function(id, targetPosition)
     return true;
 end
 
+spacetravelships.get_is_registered = function(id)
+    return findSpaceObject(id) ~= nil;
+end
+
 -- Gets ship that owns specific node position
 spacetravelships.get_owning_object = function(position)
     for _, obj in pairs(spacetravelships.space_objects) do -- for each object

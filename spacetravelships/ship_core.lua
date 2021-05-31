@@ -62,18 +62,20 @@ local function registerShipCore(position)
     local coreNode = minetest.get_node(position);
     local direction = convertDirection(coreNode.param2);
 
-    spacetravelships.register_space_object({
-        type = spacetravelships.space_object_types.ship,
-        id = id,
-        title = title,
-        core_position = position,
-        core_direction = direction,
-        size = size
-    });
+    if (not spacetravelships.get_is_registered(id)) then
+        spacetravelships.register_space_object({
+            type = spacetravelships.space_object_types.ship,
+            id = id,
+            title = title,
+            core_position = position,
+            core_direction = direction,
+            size = size
+        });
 
-    meta:set_string(spacetravelships.constants.meta_ship_core_id, id);
-    meta:set_string(spacetravelships.constants.meta_ship_core_title, title);
-    meta_set_object(meta, spacetravelships.constants.meta_ship_core_size, size);
+        meta:set_string(spacetravelships.constants.meta_ship_core_id, id);
+        meta:set_string(spacetravelships.constants.meta_ship_core_title, title);
+        meta_set_object(meta, spacetravelships.constants.meta_ship_core_size, size);
+    end
 end
 
 local function ship_core_node_timer(position, elapsed)

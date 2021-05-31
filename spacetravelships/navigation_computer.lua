@@ -29,6 +29,7 @@ local controlMapShiftRightBtn = "control_MapShiftRightBtn";
 local controlMapShiftUpBtn = "control_MapShiftUpBtn";
 local controlMapShiftDownBtn = "control_MapShiftDownBtn";
 local controlJumpBtn = "control_JumpBtn";
+local controlTargetYField = "control_TargetYField";
 
 local gridButtonPrefix = "gridBtn_";
 
@@ -216,15 +217,17 @@ local function get_selected_zone_formspec(areaGrid, selectedZone)
         "label[8, 2.8;"..sizeTextZ.."]";
 end
 
-local function get_jump_button(canJump)
+local function get_jump_controls(canJump, currentY)
     if (not canJump) then
         return "";
     else
-        return "button[8, 3.3; 2, 1;"..controlJumpBtn..";Jump]";
+        return 
+            "button[8, 3.3; 2, 1;"..controlJumpBtn..";Jump]"..
+            "field[8.5, 5; 2, 1;"..controlTargetYField..";Target Y;"..currentY.."]";
     end
 end
 
-local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift, canJump)
+local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift, canJump, currentY)
     return 
         "size[15,10]"..
         getTabsButtons()..
@@ -245,7 +248,7 @@ local function get_navigation_computer_control_formspec(areaGrid, currentDirecti
         
         get_selected_zone_formspec(areaGrid, selectedZone)..
         
-        get_jump_button(canJump);
+        get_jump_controls(canJump, currentY);
 end
 
 local function meta_get_object(meta, name)
@@ -355,10 +358,11 @@ local function processControlTabEvents(meta, coreMeta, corePosition, fields)
         if (areaGrid ~= nil and selectedZone ~= nil) then
             local targetMapZone = areaGrid[selectedZone.x][selectedZone.y];
             local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
+            local targetY = fields[controlTargetYField];
             local targetPosition = {
                 x = targetMapZone.size.min_x,
                 z = targetMapZone.size.min_z,
-                y = corePosition.y
+                y = targetY
             };
             spacetravelships.move_to_position(shipId, targetPosition);
         end
@@ -590,7 +594,7 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
             canJump = spacetravelships.can_move_to_position(shipId, targetPosition);
         end
         
-        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift, canJump);
+        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift, canJump, corePosition.y);
 
     elseif (menuTabName == tabNameConfig) then
         local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
