@@ -6,6 +6,8 @@ spacetravelships = {};
 
 spacetravelships.get_translator = S;
 
+dofile(modPath.."/constants.lua");
+
 dofile(modPath.."/register_space_objects.lua");
 
 dofile(modPath.."/ship_core.lua");

@@ -37,7 +37,7 @@ minetest.register_craftitem("spacetravelships:connection_tuner", {
             if (storedPoint ~= nil) then
                 minetest.log("Configuring controller");
                 local controllerMeta = minetest.get_meta(position);
-                controllerMeta:set_string("spacetravelships:controllable_position", minetest.serialize(storedPoint));
+                controllerMeta:set_string(spacetravelships.constants.meta_controllable_position, minetest.serialize(storedPoint));
             end
         end
 

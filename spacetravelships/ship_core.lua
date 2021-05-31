@@ -37,17 +37,17 @@ end
 local function registerShipCore(position)
     local meta = minetest.get_meta(position);
 
-    local id = meta:get_string("spacetravelships:ship_core_id");
+    local id = meta:get_string(spacetravelships.constants.meta_ship_core_id);
     if (id == nil or string.len(id) == 0) then
         id = uuid();
     end
 
-    local title = meta:get_string("spacetravelships:ship_core_title");
+    local title = meta:get_string(spacetravelships.constants.meta_ship_core_title);
     if (title == nil or string.len(title) == 0) then
         title = "New Ship";
     end
 
-    local size = meta_get_object(meta, "spacetravelships:ship_core_size");
+    local size = meta_get_object(meta, spacetravelships.constants.meta_ship_core_size);
     if (size == nil) then
         size = {
             left = 1,
@@ -71,9 +71,9 @@ local function registerShipCore(position)
         size = size
     });
 
-    meta:set_string("spacetravelships:ship_core_id", id);
-    meta:set_string("spacetravelships:ship_core_title", title);
-    meta_set_object(meta, "spacetravelships:ship_core_size", size);
+    meta:set_string(spacetravelships.constants.meta_ship_core_id, id);
+    meta:set_string(spacetravelships.constants.meta_ship_core_title, title);
+    meta_set_object(meta, spacetravelships.constants.meta_ship_core_size, size);
 end
 
 local function ship_core_node_timer(position, elapsed)
@@ -101,7 +101,7 @@ local function ship_core_node_timer(position, elapsed)
     return false;
 end
 
-minetest.register_node("spacetravelships:ship_core", {
+minetest.register_node(spacetravelships.constants.ship_core_node, {
     description = "Space Ship Core",
     tiles = {
         "machine.png^ship_core_top.png^[transformFY",
@@ -124,7 +124,7 @@ minetest.register_node("spacetravelships:ship_core", {
 
     on_desctuct = function(position)
         local meta = minetest.get_meta(position);
-        local id = meta:get_string("spacetravelships:ship_core_id");
+        local id = meta:get_string(spacetravelships.constants.meta_ship_core_id);
 
         if (id ~= nil and string.len(id) > 0) then
             spacetravelships.unregister_space_object(id);
@@ -134,7 +134,7 @@ minetest.register_node("spacetravelships:ship_core", {
 
 minetest.register_lbm({
     name = "spacetravelships:register_ship_cores",
-    nodenames = {"spacetravelships:ship_core"},
+    nodenames = {spacetravelships.constants.ship_core_node},
     run_at_every_load = true,
     action = function(position, node)
         registerShipCore(position);

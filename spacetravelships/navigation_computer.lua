@@ -326,10 +326,10 @@ local function processConfigTabEvents(corePosition, coreMeta, fields)
 
         local title = fields[configurationTitleField];
 
-        coreMeta:set_string("spacetravelships:ship_core_size", minetest.serialize(size));
-        coreMeta:set_string("spacetravelships:ship_core_title", title);
+        coreMeta:set_string(spacetravelships.constants.meta_ship_core_size, minetest.serialize(size));
+        coreMeta:set_string(spacetravelships.constants.meta_ship_core_title, title);
 
-        local id = coreMeta:get_string("spacetravelships:ship_core_id");
+        local id = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
         spacetravelships.update_space_object(id, title, corePosition, size);
     end
 end
@@ -419,7 +419,7 @@ end
 
 local function navigation_computer_receive_fields(position, formname, fields, sender)
     local meta = minetest.get_meta(position);
-    local corePosition = meta_get_object(meta, "spacetravelships:controllable_position");
+    local corePosition = meta_get_object(meta, spacetravelships.constants.meta_controllable_position);
     if (corePosition == nil) then
         return;
     end
@@ -599,9 +599,9 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
         return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift);
 
     elseif (menuTabName == tabNameConfig) then
-        local shipId = coreMeta:get_string("spacetravelships:ship_core_id");
-        local shipTitle = coreMeta:get_string("spacetravelships:ship_core_title");
-        local shipSize = meta_get_object(coreMeta, "spacetravelships:ship_core_size");
+        local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
+        local shipTitle = coreMeta:get_string(spacetravelships.constants.meta_ship_core_title);
+        local shipSize = meta_get_object(coreMeta, spacetravelships.constants.meta_ship_core_size);
         return get_navigation_computer_configuration_formspec(shipId, shipTitle, shipSize);
     end
 
@@ -611,13 +611,13 @@ end
 
 local function navigation_computer_node_timer(position, elapsed)
     local meta = minetest.get_meta(position);
-    local connectedPosition = meta_get_object(meta, "spacetravelships:controllable_position");
+    local connectedPosition = meta_get_object(meta, spacetravelships.constants.meta_controllable_position);
 
     local formspec = get_navigation_computer_inactive_formspec();
 
     if (connectedPosition ~= nil) then
         local connectedNode = minetest.get_node(connectedPosition);
-        if (connectedNode.name == "spacetravelships:ship_core") then
+        if (connectedNode.name == spacetravelships.constants.ship_core_node) then
             local coreMeta = minetest.get_meta(connectedPosition);
             formspec = getFormspecForActiveComputer(meta, connectedPosition, coreMeta);
         end
