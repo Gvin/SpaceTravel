@@ -1,4 +1,4 @@
-local metaTunerStoredPoint = "spacetravelinit:tuner_stored_point";
+local metaTunerStoredPoint = "spacetravelships:tuner_stored_point";
 
 local function meta_get_object(meta, name)
     local str = meta:get_string(name);
@@ -8,7 +8,7 @@ local function meta_get_object(meta, name)
     return minetest.deserialize(str);
 end
 
-minetest.register_craftitem("spacetravelinit:connection_tuner", {
+minetest.register_craftitem("spacetravelships:connection_tuner", {
     description = "Connection Tuner",
     inventory_image = "connection_tuner.png",
     wield_image = "connection_tuner.png",
@@ -37,7 +37,7 @@ minetest.register_craftitem("spacetravelinit:connection_tuner", {
             if (storedPoint ~= nil) then
                 minetest.log("Configuring controller");
                 local controllerMeta = minetest.get_meta(position);
-                controllerMeta:set_string("spacetravelinit:controllable_position", minetest.serialize(storedPoint));
+                controllerMeta:set_string("spacetravelships:controllable_position", minetest.serialize(storedPoint));
             end
         end
 

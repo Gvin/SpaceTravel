@@ -1,9 +1,9 @@
 
-local metaMenuTab = "spacetravelinit:menu_tab";
-local metaAreaGrid = "spacetravelinit:area_grid";
-local metaSelectedZone = "spacetravelinit:selected_zone";
-local metaZoomStep = "spacetravelinit:zoom_step";
-local metaMapShift = "spacetravelinit:map_shift";
+local metaMenuTab = "spacetravelships:menu_tab";
+local metaAreaGrid = "spacetravelships:area_grid";
+local metaSelectedZone = "spacetravelships:selected_zone";
+local metaZoomStep = "spacetravelships:zoom_step";
+local metaMapShift = "spacetravelships:map_shift";
 
 local tabNameControl = "control";
 local tabNameConfig = "config";
@@ -122,9 +122,9 @@ local function getMapGridImageMulticells(cells)
 
     if (cellsContainSelf(cells)) then -- If cells contain current ship
         resultImage = resultImage.."^spacemap_borders.png^spacemap_self.png";
-    elseif (cellsContainObject(cells, spacetravelcore.space_object_types.ship)) then -- If cells contain ship
+    elseif (cellsContainObject(cells, spacetravelships.space_object_types.ship)) then -- If cells contain ship
         resultImage = resultImage.."^spacemap_borders.png^spacemap_ship.png";
-    elseif (cellsContainObject(cells, spacetravelcore.space_object_types.station)) then -- If cells contain station
+    elseif (cellsContainObject(cells, spacetravelships.space_object_types.station)) then -- If cells contain station
         resultImage = resultImage.."^spacemap_borders.png^spacemap_station.png";
     elseif (cellsContainBorders(cells)) then -- No objects, just borders
         resultImage = resultImage.."^spacemap_borders.png";
@@ -143,7 +143,7 @@ local function getMapGridImageSingleCell(data, currentDirection)
     elseif (data.type == "borders") then
         return "spacemap_empty.png^spacemap_borders.png";
     elseif (data.type == "object" and data.object ~= nil) then
-        if (data.object.type == spacetravelcore.space_object_types.ship) then
+        if (data.object.type == spacetravelships.space_object_types.ship) then
             local shipImage = "spacemap_ship.png";
             if (data.object.id == "self") then
                 shipImage = "spacemap_self.png";
@@ -161,7 +161,7 @@ local function getMapGridImageSingleCell(data, currentDirection)
                 transformation = "^[transformR270";
             end
             return "spacemap_empty.png^spacemap_borders.png^"..shipImage..transformation;
-        elseif (data.object.type == spacetravelcore.space_object_types.station) then
+        elseif (data.object.type == spacetravelships.space_object_types.station) then
             return "spacemap_empty.png^spacemap_borders.png^spacemap_station.png";
         end
     end
@@ -326,11 +326,11 @@ local function processConfigTabEvents(corePosition, coreMeta, fields)
 
         local title = fields[configurationTitleField];
 
-        coreMeta:set_string("spacetravelinit:ship_core_size", minetest.serialize(size));
-        coreMeta:set_string("spacetravelinit:ship_core_title", title);
+        coreMeta:set_string("spacetravelships:ship_core_size", minetest.serialize(size));
+        coreMeta:set_string("spacetravelships:ship_core_title", title);
 
-        local id = coreMeta:get_string("spacetravelinit:ship_core_id");
-        spacetravelcore.update_space_object(id, title, corePosition, size);
+        local id = coreMeta:get_string("spacetravelships:ship_core_id");
+        spacetravelships.update_space_object(id, title, corePosition, size);
     end
 end
 
@@ -419,7 +419,7 @@ end
 
 local function navigation_computer_receive_fields(position, formname, fields, sender)
     local meta = minetest.get_meta(position);
-    local corePosition = meta_get_object(meta, "spacetravelinit:controllable_position");
+    local corePosition = meta_get_object(meta, "spacetravelships:controllable_position");
     if (corePosition == nil) then
         return;
     end
@@ -498,7 +498,7 @@ local function fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanRa
     local right = corePosition.x + scanRadius;
     local top = corePosition.z - scanRadius;
     local bottom = corePosition.z + scanRadius;
-    local objects = spacetravelcore.scan_for_objects(corePosition, scanRadius);
+    local objects = spacetravelships.scan_for_objects(corePosition, scanRadius);
 
     local grid = {};
 
@@ -599,9 +599,9 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
         return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift);
 
     elseif (menuTabName == tabNameConfig) then
-        local shipId = coreMeta:get_string("spacetravelinit:ship_core_id");
-        local shipTitle = coreMeta:get_string("spacetravelinit:ship_core_title");
-        local shipSize = meta_get_object(coreMeta, "spacetravelinit:ship_core_size");
+        local shipId = coreMeta:get_string("spacetravelships:ship_core_id");
+        local shipTitle = coreMeta:get_string("spacetravelships:ship_core_title");
+        local shipSize = meta_get_object(coreMeta, "spacetravelships:ship_core_size");
         return get_navigation_computer_configuration_formspec(shipId, shipTitle, shipSize);
     end
 
@@ -611,13 +611,13 @@ end
 
 local function navigation_computer_node_timer(position, elapsed)
     local meta = minetest.get_meta(position);
-    local connectedPosition = meta_get_object(meta, "spacetravelinit:controllable_position");
+    local connectedPosition = meta_get_object(meta, "spacetravelships:controllable_position");
 
     local formspec = get_navigation_computer_inactive_formspec();
 
     if (connectedPosition ~= nil) then
         local connectedNode = minetest.get_node(connectedPosition);
-        if (connectedNode.name == "spacetravelinit:ship_core") then
+        if (connectedNode.name == "spacetravelships:ship_core") then
             local coreMeta = minetest.get_meta(connectedPosition);
             formspec = getFormspecForActiveComputer(meta, connectedPosition, coreMeta);
         end
@@ -628,7 +628,7 @@ local function navigation_computer_node_timer(position, elapsed)
     return true;
 end
 
-minetest.register_node("spacetravelinit:navigation_computer", {
+minetest.register_node("spacetravelships:navigation_computer", {
     description = "Navigation Computer",
     tiles = {
         "machine.png",

@@ -1,13 +1,13 @@
-spacetravelcore.space_objects = {};
-spacetravelcore.space_objects_cubes = {};
+spacetravelships.space_objects = {};
+spacetravelships.space_objects_cubes = {};
 
-spacetravelcore.space_object_types = {};
-spacetravelcore.space_object_types.ship = "spacetravelcore:space_object_types.ship";
-spacetravelcore.space_object_types.station = "spacetravelcore:space_object_types.station";
-spacetravelcore.space_object_types.asteroid = "spacetravelcore:space_object_types.asteroid";
+spacetravelships.space_object_types = {};
+spacetravelships.space_object_types.ship = "spacetravelships:space_object_types.ship";
+spacetravelships.space_object_types.station = "spacetravelships:space_object_types.station";
+spacetravelships.space_object_types.asteroid = "spacetravelships:space_object_types.asteroid";
 
 local function findSpaceObject(id)
-    for _, obj in pairs(spacetravelcore.space_objects) do
+    for _, obj in pairs(spacetravelships.space_objects) do
         if (obj.id == id) then
             return obj;
         end
@@ -55,7 +55,7 @@ local function calculateObjectCube(position, size)
 end
 
 -- objectData: {type, id, title, core_position, core_direction, size}
-spacetravelcore.register_space_object = function(objectData)
+spacetravelships.register_space_object = function(objectData)
     if (objectData == nil) then
         error("Object data is nil.", 2);
     end
@@ -67,14 +67,14 @@ spacetravelcore.register_space_object = function(objectData)
         error("Object with the same id is already registered. ID="..objectData.id, 2);
     end
 
-    table.insert(spacetravelcore.space_objects, objectData);
+    table.insert(spacetravelships.space_objects, objectData);
     local cube = calculateObjectCube(objectData.core_position, objectData.size);
-    spacetravelcore.space_objects_cubes[objectData.id] = cube;
+    spacetravelships.space_objects_cubes[objectData.id] = cube;
 
     minetest.log("Space object registered: "..objectData.id);
 end
 
-spacetravelcore.update_space_object = function(id, title, core_position, size)
+spacetravelships.update_space_object = function(id, title, core_position, size)
     local obj = findSpaceObject(id);
     if (obj == nil) then
         error("Object with such id is not registered. ID="..id, 2);
@@ -84,12 +84,12 @@ spacetravelcore.update_space_object = function(id, title, core_position, size)
     obj.size = minetest.deserialize(minetest.serialize(size));
 
     local cube = calculateObjectCube(core_position, size);
-    spacetravelcore.space_objects_cubes[id] = cube;
+    spacetravelships.space_objects_cubes[id] = cube;
 end
 
-spacetravelcore.scan_for_objects = function(position, radius)
+spacetravelships.scan_for_objects = function(position, radius)
     local result = {};
-    for _, obj in pairs(spacetravelcore.space_objects) do
+    for _, obj in pairs(spacetravelships.space_objects) do
         local corePos = obj.core_position;
         if (corePos.x >= position.x - radius and
             corePos.x <= position.x + radius and
@@ -98,7 +98,7 @@ spacetravelcore.scan_for_objects = function(position, radius)
             corePos.z >= position.z - radius and
             corePos.z <= position.z + radius) then
                 local objCopy = minetest.deserialize(minetest.serialize(obj));
-                objCopy.cube = spacetravelcore.space_objects_cubes[obj.id];
+                objCopy.cube = spacetravelships.space_objects_cubes[obj.id];
                 table.insert(result, objCopy);
         end
     end
@@ -115,20 +115,20 @@ local function findIndex(list, checkFnc)
     return nil;
 end
 
-spacetravelcore.unregister_space_object = function(objectId)
+spacetravelships.unregister_space_object = function(objectId)
     minetest.log("Unregistering object: "..objectId);
 
     local objectIdComparer = function(obj)
         return obj.id == objectId;
     end
 
-    local objIndex = findIndex(spacetravelcore.space_objects, objectIdComparer);
+    local objIndex = findIndex(spacetravelships.space_objects, objectIdComparer);
     if (objIndex == nil) then
         error("Object with such id is not registered. ID="..objectId, 2);
     end
 
-    table.remove(spacetravelcore.space_objects, objIndex);
-    spacetravelcore.space_objects_cubes[objectId] = nil;
+    table.remove(spacetravelships.space_objects, objIndex);
+    spacetravelships.space_objects_cubes[objectId] = nil;
 end
 
 local function createCube(position, size)
@@ -167,8 +167,8 @@ local function checkContains(position, size, point)
         point.z <= cube.max_z;
 end
 
-spacetravelcore.can_move_to_position = function(targetPosition, size)
-    for _, obj in pairs(spacetravelcore.space_objects) do -- for each object
+spacetravelships.can_move_to_position = function(targetPosition, size)
+    for _, obj in pairs(spacetravelships.space_objects) do -- for each object
         if (checkOverlaps(targetPosition, size, obj.core_position, obj.size)) then
             return false;
         end
@@ -191,8 +191,8 @@ local function move_objects(oldPos, newPos)
     end
 end
 
-spacetravelcore.move_to_position = function(type, id, core_position, size, targetPosition)
-    if (not spacetravelcore.can_move_to_position(targetPosition, size)) then
+spacetravelships.move_to_position = function(type, id, core_position, size, targetPosition)
+    if (not spacetravelships.can_move_to_position(targetPosition, size)) then
         return false;
     end
 
