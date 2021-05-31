@@ -76,105 +76,80 @@ local function get_navigation_computer_configuration_formspec(shipId, shipTitle,
         "button[0.2,9;2,1;"..configurationSaveButton..";Save]";
 end
 
-local function cellsContainObject(cells, objectType)
-    for _, cell in pairs(cells) do
-        if (cell.type == "object" and cell.object ~= nil and cell.object.type == objectType) then
+local function cellContainObject(cell, objectType)
+    for _, obj in pairs(cell.objects) do
+        if (obj.type == objectType) then
             return true;
         end
     end
     return false;
 end
 
-local function cellsContainMultipleObjects(cells)
-    local objectFound = false;
-    for _, cell in pairs(cells) do
-        if (cell.type == "object" and cell.object ~= nil) then
-            if (objectFound) then
-                return true;
-            else
-                objectFound = true;
-            end
-        end
-    end
-    return false;
-end
-
-local function cellsContainSelf(cells)
-    for _, cell in pairs(cells) do
-        if (cell.type == "object" and cell.object ~= nil and cell.object.id == "self") then
+local function cellContainSelf(cell)
+    for _, obj in pairs(cell.objects) do
+        if (obj.id == "self") then
             return true;
         end
     end
     return false;
 end
 
-local function cellsContainBorders(cells)
-    local bordersCount = 0;
-    for _, cell in pairs(cells) do
-        if (cell.type == "borders") then
-            bordersCount = bordersCount + 1;
-        end
-    end
-    return bordersCount / #cells >= 0.5;
+local function cellContainBorders(cell)
+    return cell.borders >= 0.5;
 end
 
-local function getMapGridImageMulticells(cells)
+local function getMapGridImageMulticells(cellData)
     local resultImage = "spacemap_empty.png";
 
-    if (cellsContainSelf(cells)) then -- If cells contain current ship
+    if (cellContainSelf(cellData)) then -- If cells contain current ship
         resultImage = resultImage.."^spacemap_borders.png^spacemap_self.png";
-    elseif (cellsContainObject(cells, spacetravelships.space_object_types.ship)) then -- If cells contain ship
+    elseif (cellContainObject(cellData, spacetravelships.space_object_types.ship)) then -- If cells contain ship
         resultImage = resultImage.."^spacemap_borders.png^spacemap_ship.png";
-    elseif (cellsContainObject(cells, spacetravelships.space_object_types.station)) then -- If cells contain station
+    elseif (cellContainObject(cellData, spacetravelships.space_object_types.station)) then -- If cells contain station
         resultImage = resultImage.."^spacemap_borders.png^spacemap_station.png";
-    elseif (cellsContainBorders(cells)) then -- No objects, just borders
+    elseif (cellContainBorders(cellData)) then -- No objects, just borders
         resultImage = resultImage.."^spacemap_borders.png";
     end
 
-    if (cellsContainMultipleObjects(cells)) then -- More than 1 object
+    if (#cellData.objects > 1) then -- More than 1 object
         resultImage = resultImage.."^spacemap_multi.png";
     end
 
     return resultImage;
 end
 
-local function getMapGridImageSingleCell(data, currentDirection)
-    if (data.type == "empty") then
-        return "spacemap_empty.png";
-    elseif (data.type == "borders") then
-        return "spacemap_empty.png^spacemap_borders.png";
-    elseif (data.type == "object" and data.object ~= nil) then
-        if (data.object.type == spacetravelships.space_object_types.ship) then
-            local shipImage = "spacemap_ship.png";
-            if (data.object.id == "self") then
-                shipImage = "spacemap_self.png";
-            end
-            local transformation = "";
-            local directionDiff = currentDirection - data.object.core_direction;
-            if (directionDiff > 0) then
-                directionDiff = directionDiff - 360;
-            end
-            if (directionDiff == -180) then -- ^v
-                transformation = "^[transformR180";
-            elseif (directionDiff == -90) then -- ^>
-                transformation = "^[transformR90";
-            elseif (directionDiff == -270) then -- <v
-                transformation = "^[transformR270";
-            end
-            return "spacemap_empty.png^spacemap_borders.png^"..shipImage..transformation;
-        elseif (data.object.type == spacetravelships.space_object_types.station) then
-            return "spacemap_empty.png^spacemap_borders.png^spacemap_station.png";
+local function getMapGridImageSingleCell(cellData, currentDirection)
+    local resultImage = "spacemap_empty.png";
+
+    if (cellContainSelf(cellData)) then -- If cells contain current ship
+        resultImage = resultImage.."^spacemap_borders.png^spacemap_self.png";
+    elseif (cellContainObject(cellData, spacetravelships.space_object_types.ship)) then -- If cells contain ship
+        local directionDiff = currentDirection - cellData.objects[1].core_direction;
+        if (directionDiff > 0) then
+            directionDiff = directionDiff - 360;
         end
+        if (directionDiff == -180) then -- ^v
+            transformation = "^[transformR180";
+        elseif (directionDiff == -90) then -- ^>
+            transformation = "^[transformR90";
+        elseif (directionDiff == -270) then -- <v
+            transformation = "^[transformR270";
+        end
+        return "spacemap_empty.png^spacemap_borders.png^spacemap_ship.png"..transformation;
+    elseif (cellContainObject(cellData, spacetravelships.space_object_types.station)) then -- If cells contain station
+        resultImage = resultImage.."^spacemap_borders.png^spacemap_station.png";
+    elseif (cellContainBorders(cellData)) then -- No objects, just borders
+        resultImage = resultImage.."^spacemap_borders.png";
     end
 
-    return "spacemap_empty.png^spacemap_unknown.png";
+    return resultImage;
 end
 
-local function getMapGridImage(cells, currentDirection, zoomLevel)
+local function getMapGridImage(cellData, currentDirection, zoomLevel)
     if (zoomLevel == 1) then -- No zoom
-        return getMapGridImageSingleCell(cells[1], currentDirection);
+        return getMapGridImageSingleCell(cellData, currentDirection);
     else
-        return getMapGridImageMulticells(cells);
+        return getMapGridImageMulticells(cellData);
     end
 end
 
@@ -210,59 +185,25 @@ local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone, z
     return result;
 end
 
-local function countObjects(zone)
-    local result = 0;
-    for _, cell in pairs(zone) do
-        if (cell.type == "object") then
-            result = result + 1;
-        end
-    end
-    return result;
-end
-
-local function calculateZoneSize(zone)
-    local minX = zone[1].position.x;
-    local maxX = minX;
-    local minZ = zone[1].position.z;
-    local maxZ = minZ;
-    for _, cell in pairs(zone) do
-        if (cell.position.x < minX) then
-            minX = cell.position.x;
-        end
-        if (cell.position.x > maxX) then
-            maxX = cell.position.x;
-        end
-        if (cell.position.z < minZ) then
-            minZ = cell.position.z;
-        end
-        if (cell.position.z > maxZ) then
-            maxZ = cell.position.z;
-        end
-    end
-
-    return minX, maxX, minZ, maxZ;
-end
-
 local function get_selected_zone_formspec(areaGrid, selectedZone)
     if (selectedZone == nil) then
         return "";
     end
 
     local zone = areaGrid[selectedZone.x][selectedZone.y];
-    local minX, maxX, minZ, maxZ = calculateZoneSize(zone);
 
     local sizeTextX = "";
-    if (minX == maxX) then
-        sizeTextX = sizeTextX.."X="..minX;
+    if (zone.size.min_x == zone.size.max_x) then
+        sizeTextX = sizeTextX.."X="..zone.size.min_x;
     else
-        sizeTextX = sizeTextX.."X=["..minX..";"..maxX.."]";
+        sizeTextX = sizeTextX.."X=["..zone.size.min_x..";"..zone.size.max_x.."]";
     end
 
     local sizeTextZ = "";
-    if (minZ == maxZ) then
-        sizeTextZ = sizeTextZ.."Z="..minZ;
+    if (zone.size.min_z == zone.size.max_z) then
+        sizeTextZ = sizeTextZ.."Z="..zone.size.min_z;
     else
-        sizeTextZ = sizeTextZ.."Z=["..minZ..";"..maxZ.."]";
+        sizeTextZ = sizeTextZ.."Z=["..zone.size.min_z..";"..zone.size.max_z.."]";
     end
 
     sizeTextX = minetest.formspec_escape(sizeTextX);
@@ -270,7 +211,7 @@ local function get_selected_zone_formspec(areaGrid, selectedZone)
 
     return
         "label[8, 1.2;Selection:]"..
-        "label[8, 1.7;Objects: "..countObjects(zone).."]"..
+        "label[8, 1.7;Objects: "..#zone.objects.."]"..
         "label[8, 2.3;"..sizeTextX.."]"..
         "label[8, 2.8;"..sizeTextZ.."]";
 end
@@ -415,8 +356,8 @@ local function processControlTabEvents(meta, coreMeta, corePosition, fields)
             local targetMapZone = areaGrid[selectedZone.x][selectedZone.y];
             local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
             local targetPosition = {
-                x = targetMapZone[1].position.x,
-                z = targetMapZone[1].position.z,
+                x = targetMapZone.size.min_x,
+                z = targetMapZone.size.min_z,
                 y = corePosition.y
             };
             spacetravelships.move_to_position(shipId, targetPosition);
@@ -556,14 +497,36 @@ local function buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLe
             table.insert(grid[gridX], {});
             local dataGridY = 1 + (gridY - 1) * zoomLevel;
 
+            local cellObjects = {};
+            local cellSize = {
+                min_x = dataGrid[dataGridX][dataGridY].position.x,
+                max_x = dataGrid[dataGridX][dataGridY].position.x,
+                min_z = dataGrid[dataGridX][dataGridY].position.z,
+                max_z = dataGrid[dataGridX][dataGridY].position.z
+            };
+            local bordersCount = 0;
             for x = dataGridX, dataGridX + zoomLevel - 1 do
                 for y = dataGridY, dataGridY + zoomLevel - 1 do
                     if (x <= #dataGrid and y <= #dataGrid[x]) then
                         local cell = dataGrid[x][y];
-                        table.insert(grid[gridX][gridY], cell);
+                        if (cell.type == "object" and cell.object ~= nil) then
+                            table.insert(cellObjects, cell.object);
+                        end
+                        if (cell.type == "borders") then
+                            bordersCount = bordersCount + 1;
+                        end
+                        cellSize.min_x = math.min(cellSize.min_x, cell.position.x);
+                        cellSize.max_x = math.max(cellSize.max_x, cell.position.x);
+                        cellSize.min_z = math.min(cellSize.min_z, cell.position.z);
+                        cellSize.max_z = math.max(cellSize.max_z, cell.position.z);
                     end
                 end
             end
+            grid[gridX][gridY] = {
+                objects = cellObjects,
+                size = cellSize,
+                borders = bordersCount / (zoomLevel * zoomLevel);
+            };
         end
     end
 
@@ -620,8 +583,8 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
             local targetMapZone = areaGrid[selectedZone.x][selectedZone.y];
             local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
             local targetPosition = {
-                x = targetMapZone[1].position.x,
-                z = targetMapZone[1].position.z,
+                x = targetMapZone.size.min_x,
+                z = targetMapZone.size.min_z,
                 y = corePosition.y
             }
             canJump = spacetravelships.can_move_to_position(shipId, targetPosition);
