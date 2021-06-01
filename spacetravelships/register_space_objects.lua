@@ -222,11 +222,15 @@ end
 local function move_objects(oldPos, newPos)
     local objects = minetest.get_objects_inside_radius(oldPos, 1);
     for _, obj in pairs(objects) do
-        obj:set_pos({
+        local newObjectPos = {
             x = newPos.x,
             z = newPos.z,
-            y = newPos.y + 1 -- to fix player in block teleport
-        });
+            y = newPos.y
+        };
+        if (obj:is_player()) then -- to fix player in block teleport
+            newObjectPos.y = newObjectPos.y + 1;
+        end
+        obj:set_pos(newObjectPos);
     end
 end
 

@@ -34,6 +34,8 @@ local controlTargetYPlus1Btn = "control_TargetYPlus1Btn";
 local controlTargetYMinus1Btn = "control_TargetYMinus1Btn";
 local controlTargetYPlus10Btn = "control_TargetYPlus10Btn";
 local controlTargetYMinus10Btn = "control_TargetYMinus10Btn";
+local controlTargetYPlus100Btn = "control_TargetYPlus100Btn";
+local controlTargetYMinus100Btn = "control_TargetYMinus100Btn";
 
 local gridButtonPrefix = "gridBtn_";
 
@@ -46,8 +48,9 @@ local zoomSteps = {
 local mapDisplaySize = 21;
 local gridRadius = 20;
 local defaultMapShift = math.floor(gridRadius - mapDisplaySize / 2);
-local maxTargetY = 200;
-local minTargetY = 1;
+local maxTargetY = 29000;
+local minTargetY = -29000;
+local maxDiffY = 100;
 
 local function get_navigation_computer_inactive_formspec()
     return "size[15,10]"..
@@ -229,16 +232,17 @@ local function get_jump_controls(canJump, targetY)
         "label[7.5, 3.5;"..targetYText.."]"..
         "button[9.5, 3.3; 1, 1;"..controlTargetYPlus1Btn..";+1]"..
         "button[10.5, 3.3; 1, 1;"..controlTargetYMinus1Btn..";-1]"..
-        "button[11.5, 3.3; 1, 1;"..controlTargetYPlus10Btn..";+10]"..
-        "button[12.5, 3.3; 1, 1;"..controlTargetYMinus10Btn..";-10]";
-
+        "button[11.5, 3.3; 1.2, 1;"..controlTargetYPlus10Btn..";+10]"..
+        "button[12.5, 3.3; 1.2, 1;"..controlTargetYMinus10Btn..";-10]"..
+        "button[9.5, 4.3; 1, 1;"..controlTargetYPlus100Btn..";+100]"..
+        "button[10.5, 4.3; 1, 1;"..controlTargetYMinus100Btn..";-100]";
     
     if (not canJump) then
         return result;
     else
         return 
             result..
-            "button[8, 5; 2, 1;"..controlJumpBtn..";Jump]";
+            "button_exit[8, 5; 2, 1;"..controlJumpBtn..";Jump]";
     end
 end
 
@@ -313,7 +317,10 @@ local function findGridButtonEvent(fields)
     return nil;
 end
 
-local function processControlTabEvents(meta, coreMeta, corePosition, fields, spaceObject)
+local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
+    local currentMaxTargetY = math.min(spaceObject.core_position.y + maxDiffY, maxTargetY - spaceObject.size.up);
+    local currentMinTargetY = math.max(spaceObject.core_position.y - maxDiffY, minTargetY + spaceObject.size.down);
+
     if (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
@@ -366,19 +373,32 @@ local function processControlTabEvents(meta, coreMeta, corePosition, fields, spa
         mapShift.y = mapShift.y + 1;
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
         minetest.log(minetest.serialize(mapShift))
+
     elseif (fieldsContainButton(fields, controlTargetYPlus1Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        meta:set_int(metaTargetY, math.min(maxTargetY - spaceObject.size.up, targetY + 1));
+        local newTargetY = math.min(currentMaxTargetY, targetY + 1);
+        meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYPlus10Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        meta:set_int(metaTargetY, math.min(maxTargetY - spaceObject.size.up, targetY + 10));
-    elseif (fieldsContainButton(fields, controlTargetYMinus1Btn)) then
-        minetest.log("-1")
+        local newTargetY = math.min(currentMaxTargetY, targetY + 10);
+        meta:set_int(metaTargetY, newTargetY);
+    elseif (fieldsContainButton(fields, controlTargetYPlus100Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        meta:set_int(metaTargetY, math.max(minTargetY + spaceObject.size.down, targetY - 1));
+        local newTargetY = math.min(currentMaxTargetY, targetY + 100);
+        meta:set_int(metaTargetY, newTargetY);
+    elseif (fieldsContainButton(fields, controlTargetYMinus1Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        local newTargetY = math.max(currentMinTargetY, targetY - 1);
+        meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYMinus10Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        meta:set_int(metaTargetY, math.max(minTargetY + spaceObject.size.down, targetY - 10));
+        local newTargetY = math.max(currentMinTargetY, targetY - 1);
+        meta:set_int(metaTargetY, newTargetY);
+    elseif (fieldsContainButton(fields, controlTargetYMinus100Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        local newTargetY = math.max(currentMinTargetY, targetY - 1);
+        meta:set_int(metaTargetY, newTargetY);
+
     elseif (fieldsContainButton(fields, controlJumpBtn)) then -- Jump
         minetest.log("Jump initiated");
         local areaGrid = meta_get_object(meta, metaAreaGrid);
@@ -432,7 +452,7 @@ local function navigation_computer_receive_fields(position, formname, fields, se
 
     local coreMeta = minetest.get_meta(spaceObject.core_position);
     if (currentTab == tabNameControl) then -- Control tab events
-        processControlTabEvents(meta, coreMeta, spaceObject.core_position, fields, spaceObject);
+        processControlTabEvents(meta, coreMeta, fields, spaceObject);
     elseif (currentTab == tabNameConfig) then -- Configuration tab events
         processConfigTabEvents(spaceObject.core_position, coreMeta, fields);
     end
@@ -578,18 +598,18 @@ local function convertDirection(dir)
     error("Unable to convert direction: "..dir);
 end
 
-local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
+local function getFormspecForActiveComputer(meta, spaceObject, coreMeta)
     local menuTabName = meta:get_string(metaMenuTab);
 
     if (menuTabName == nil or menuTabName == tabNameControl) then
-        local coreNode = minetest.get_node(corePosition);
+        local coreNode = minetest.get_node(spaceObject.core_position);
         local coreDirection = convertDirection(coreNode.param2);
 
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
         local zoomLevel = zoomSteps[zoomStep];
 
-        local areaGrid = buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLevel);
+        local areaGrid = buildAreaGrid(meta, spaceObject.core_position, coreDirection, coreMeta, zoomLevel);
         meta:set_string(metaAreaGrid, minetest.serialize(areaGrid));
         local selectedZone = meta_get_object(meta, metaSelectedZone);
 
@@ -610,9 +630,11 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
             meta:set_string(metaMapShift, minetest.serialize(mapShift));
         end 
 
-        local targetY = meta:get_int(metaTargetY);
-        if (targetY == nil or targetY == 0) then
-            targetY = corePosition.y;
+        local storedTargetY = meta:get_int(metaTargetY);
+        local currentMaxTargetY = math.min(spaceObject.core_position.y + maxDiffY, maxTargetY - spaceObject.size.down);
+        local currentMinTargetY = math.max(spaceObject.core_position.y - maxDiffY, minTargetY + spaceObject.size.up);
+        local targetY = math.max(currentMinTargetY, math.min(currentMaxTargetY, storedTargetY));
+        if (targetY ~= storedTargetY) then
             meta:set_int(metaTargetY, targetY);
         end
 
@@ -649,7 +671,7 @@ local function navigation_computer_node_timer(position, elapsed)
 
     if (spaceObject ~= nil) then
         local coreMeta = minetest.get_meta(spaceObject.core_position);
-        formspec = getFormspecForActiveComputer(meta, spaceObject.core_position, coreMeta);
+        formspec = getFormspecForActiveComputer(meta, spaceObject, coreMeta);
     end
 
     meta:set_string("formspec", formspec);
