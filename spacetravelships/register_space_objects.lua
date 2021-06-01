@@ -15,6 +15,27 @@ local function findSpaceObject(id)
     return nil;
 end
 
+local function createCube(position, size)
+    local cube = {};
+    cube.min_x = position.x - size.x;
+    cube.max_x = position.x + size.x;
+    cube.min_y = position.y - size.y;
+    cube.max_y = position.y + size.y;
+    cube.min_z = position.z - size.z;
+    cube.max_z = position.z + size.z;
+    return cube;
+end
+
+local function checkOverlaps(cube1, cube2)
+    return 
+        cube1.max_x >= cube2.min_x and
+        cube1.min_x <= cube2.max_x and
+        cube1.max_y >= cube2.min_y and
+        cube1.min_y <= cube2.max_y and
+        cube1.max_z >= cube2.min_z and
+        cube1.min_z <= cube2.max_z;
+end
+
 local function calculateObjectCube(position, size)
     local node = minetest.get_node(position);
     local dir = node.param2;
@@ -88,18 +109,22 @@ spacetravelships.update_space_object = function(id, title, core_position, size)
 end
 
 spacetravelships.scan_for_objects = function(position, radius)
+    local scanCube = {
+        min_x = position.x - radius,
+        max_x = position.x + radius,
+        min_y = position.y - radius,
+        max_y = position.y + radius,
+        min_z = position.z - radius,
+        max_z = position.z + radius
+    };
+
     local result = {};
     for _, obj in pairs(spacetravelships.space_objects) do
-        local corePos = obj.core_position;
-        if (corePos.x >= position.x - radius and
-            corePos.x <= position.x + radius and
-            corePos.y >= position.y - radius and
-            corePos.y <= position.y + radius and
-            corePos.z >= position.z - radius and
-            corePos.z <= position.z + radius) then
-                local objCopy = minetest.deserialize(minetest.serialize(obj));
-                objCopy.cube = spacetravelships.space_objects_cubes[obj.id];
-                table.insert(result, objCopy);
+        local objCube = spacetravelships.space_objects_cubes[obj.id];
+        if (checkOverlaps(scanCube, objCube)) then
+            local objCopy = minetest.deserialize(minetest.serialize(obj));
+            objCopy.cube = objCube;
+            table.insert(result, objCopy);
         end
     end
 
@@ -129,27 +154,6 @@ spacetravelships.unregister_space_object = function(objectId)
 
     table.remove(spacetravelships.space_objects, objIndex);
     spacetravelships.space_objects_cubes[objectId] = nil;
-end
-
-local function createCube(position, size)
-    local cube = {};
-    cube.min_x = position.x - size.x;
-    cube.max_x = position.x + size.x;
-    cube.min_y = position.y - size.y;
-    cube.max_y = position.y + size.y;
-    cube.min_z = position.z - size.z;
-    cube.max_z = position.z + size.z;
-    return cube;
-end
-
-local function checkOverlaps(cube1, cube2)
-    return 
-        cube1.max_x >= cube2.min_x and
-        cube1.min_x <= cube2.max_x and
-        cube1.max_y >= cube2.min_y and
-        cube1.min_y <= cube2.max_y and
-        cube1.max_z >= cube2.min_z and
-        cube1.min_z <= cube2.max_z;
 end
 
 local function checkContains(cube, point)

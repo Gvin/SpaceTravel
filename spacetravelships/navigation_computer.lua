@@ -392,11 +392,11 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYMinus10Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.max(currentMinTargetY, targetY - 1);
+        local newTargetY = math.max(currentMinTargetY, targetY - 10);
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYMinus100Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.max(currentMinTargetY, targetY - 1);
+        local newTargetY = math.max(currentMinTargetY, targetY - 100);
         meta:set_int(metaTargetY, newTargetY);
 
     elseif (fieldsContainButton(fields, controlJumpBtn)) then -- Jump
