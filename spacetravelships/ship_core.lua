@@ -104,7 +104,7 @@ minetest.register_node(spacetravelships.constants.ship_core_node, {
         minetest.get_node_timer(position):start(0.5);
     end,
 
-    on_desctuct = function(position)
+    on_destruct = function(position)
         local meta = minetest.get_meta(position);
         local id = meta:get_string(spacetravelships.constants.meta_ship_core_id);
 

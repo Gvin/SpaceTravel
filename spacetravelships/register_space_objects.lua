@@ -255,7 +255,7 @@ spacetravelships.move_to_position = function(id, targetPosition)
         z = targetPosition.z - obj.core_position.z
     };
 
-    spacetravelships.unregister_space_object(id);
+    --spacetravelships.unregister_space_object(id);
 
     for x = cube.min_x, cube.max_x do
     for y = cube.min_y, cube.max_y do
