@@ -4,6 +4,7 @@ local metaAreaGrid = "spacetravelships:area_grid";
 local metaSelectedZone = "spacetravelships:selected_zone";
 local metaZoomStep = "spacetravelships:zoom_step";
 local metaMapShift = "spacetravelships:map_shift";
+local metaTargetY = "spacetravelships:target_y";
 
 local tabNameControl = "control";
 local tabNameConfig = "config";
@@ -29,7 +30,10 @@ local controlMapShiftRightBtn = "control_MapShiftRightBtn";
 local controlMapShiftUpBtn = "control_MapShiftUpBtn";
 local controlMapShiftDownBtn = "control_MapShiftDownBtn";
 local controlJumpBtn = "control_JumpBtn";
-local controlTargetYField = "control_TargetYField";
+local controlTargetYPlus1Btn = "control_TargetYPlus1Btn";
+local controlTargetYMinus1Btn = "control_TargetYMinus1Btn";
+local controlTargetYPlus10Btn = "control_TargetYPlus10Btn";
+local controlTargetYMinus10Btn = "control_TargetYMinus10Btn";
 
 local gridButtonPrefix = "gridBtn_";
 
@@ -42,6 +46,8 @@ local zoomSteps = {
 local mapDisplaySize = 21;
 local gridRadius = 20;
 local defaultMapShift = math.floor(gridRadius - mapDisplaySize / 2);
+local maxTargetY = 200;
+local minTargetY = 1;
 
 local function get_navigation_computer_inactive_formspec()
     return "size[15,10]"..
@@ -217,17 +223,26 @@ local function get_selected_zone_formspec(areaGrid, selectedZone)
         "label[8, 2.8;"..sizeTextZ.."]";
 end
 
-local function get_jump_controls(canJump, currentY)
+local function get_jump_controls(canJump, targetY)
+    local targetYText = minetest.formspec_escape("Target Y: "..targetY);
+    local result = 
+        "label[7.5, 3.5;"..targetYText.."]"..
+        "button[9.5, 3.3; 1, 1;"..controlTargetYPlus1Btn..";+1]"..
+        "button[10.5, 3.3; 1, 1;"..controlTargetYMinus1Btn..";-1]"..
+        "button[11.5, 3.3; 1, 1;"..controlTargetYPlus10Btn..";+10]"..
+        "button[12.5, 3.3; 1, 1;"..controlTargetYMinus10Btn..";-10]";
+
+    
     if (not canJump) then
-        return "";
+        return result;
     else
         return 
-            "button[8, 3.3; 2, 1;"..controlJumpBtn..";Jump]"..
-            "field[8.5, 5; 2, 1;"..controlTargetYField..";Target Y;"..currentY.."]";
+            result..
+            "button[8, 5; 2, 1;"..controlJumpBtn..";Jump]";
     end
 end
 
-local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift, canJump, currentY)
+local function get_navigation_computer_control_formspec(areaGrid, currentDirection, selectedZone, zoomLevel, mapShift, canJump, targetY)
     return 
         "size[15,10]"..
         getTabsButtons()..
@@ -248,7 +263,7 @@ local function get_navigation_computer_control_formspec(areaGrid, currentDirecti
         
         get_selected_zone_formspec(areaGrid, selectedZone)..
         
-        get_jump_controls(canJump, currentY);
+        get_jump_controls(canJump, targetY);
 end
 
 local function meta_get_object(meta, name)
@@ -298,7 +313,7 @@ local function findGridButtonEvent(fields)
     return nil;
 end
 
-local function processControlTabEvents(meta, coreMeta, corePosition, fields)
+local function processControlTabEvents(meta, coreMeta, corePosition, fields, spaceObject)
     if (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
@@ -351,6 +366,19 @@ local function processControlTabEvents(meta, coreMeta, corePosition, fields)
         mapShift.y = mapShift.y + 1;
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
         minetest.log(minetest.serialize(mapShift))
+    elseif (fieldsContainButton(fields, controlTargetYPlus1Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        meta:set_int(metaTargetY, math.min(maxTargetY - spaceObject.size.up, targetY + 1));
+    elseif (fieldsContainButton(fields, controlTargetYPlus10Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        meta:set_int(metaTargetY, math.min(maxTargetY - spaceObject.size.up, targetY + 10));
+    elseif (fieldsContainButton(fields, controlTargetYMinus1Btn)) then
+        minetest.log("-1")
+        local targetY = meta:get_int(metaTargetY);
+        meta:set_int(metaTargetY, math.max(minTargetY + spaceObject.size.down, targetY - 1));
+    elseif (fieldsContainButton(fields, controlTargetYMinus10Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        meta:set_int(metaTargetY, math.max(minTargetY + spaceObject.size.down, targetY - 10));
     elseif (fieldsContainButton(fields, controlJumpBtn)) then -- Jump
         minetest.log("Jump initiated");
         local areaGrid = meta_get_object(meta, metaAreaGrid);
@@ -358,7 +386,7 @@ local function processControlTabEvents(meta, coreMeta, corePosition, fields)
         if (areaGrid ~= nil and selectedZone ~= nil) then
             local targetMapZone = areaGrid[selectedZone.x][selectedZone.y];
             local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
-            local targetY = fields[controlTargetYField];
+            local targetY = meta:get_int(metaTargetY);
             local targetPosition = {
                 x = targetMapZone.size.min_x,
                 z = targetMapZone.size.min_z,
@@ -404,7 +432,7 @@ local function navigation_computer_receive_fields(position, formname, fields, se
 
     local coreMeta = minetest.get_meta(spaceObject.core_position);
     if (currentTab == tabNameControl) then -- Control tab events
-        processControlTabEvents(meta, coreMeta, spaceObject.core_position, fields);
+        processControlTabEvents(meta, coreMeta, spaceObject.core_position, fields, spaceObject);
     elseif (currentTab == tabNameConfig) then -- Configuration tab events
         processConfigTabEvents(spaceObject.core_position, coreMeta, fields);
     end
@@ -582,6 +610,12 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
             meta:set_string(metaMapShift, minetest.serialize(mapShift));
         end 
 
+        local targetY = meta:get_int(metaTargetY);
+        if (targetY == nil or targetY == 0) then
+            targetY = corePosition.y;
+            meta:set_int(metaTargetY, targetY);
+        end
+
         local canJump = false;
         if (selectedZone ~= nil) then
             local targetMapZone = areaGrid[selectedZone.x][selectedZone.y];
@@ -589,12 +623,12 @@ local function getFormspecForActiveComputer(meta, corePosition, coreMeta)
             local targetPosition = {
                 x = targetMapZone.size.min_x,
                 z = targetMapZone.size.min_z,
-                y = corePosition.y
+                y = targetY
             }
             canJump = spacetravelships.can_move_to_position(shipId, targetPosition);
         end
         
-        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift, canJump, corePosition.y);
+        return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift, canJump, targetY);
 
     elseif (menuTabName == tabNameConfig) then
         local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
