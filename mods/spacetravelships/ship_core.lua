@@ -86,12 +86,12 @@ end
 minetest.register_node(spacetravelships.constants.ship_core_node, {
     description = "Space Ship Core",
     tiles = {
-        "machine.png^ship_core_top.png^[transformFY",
-        "machine.png",
-        "machine.png^ship_core.png^ship_core_side.png",
-        "machine.png^ship_core.png^ship_core_side.png^[transformFX",
-        "machine.png^ship_core.png",
-        "machine.png^ship_core.png",
+        "spacetraveltechnology_machine.png^spacetravelships_ship_core_top.png^[transformFY",
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_ship_core.png^spacetravelships_ship_core_side.png",
+        "spacetraveltechnology_machine.png^spacetravelships_ship_core.png^spacetravelships_ship_core_side.png^[transformFX",
+        "spacetraveltechnology_machine.png^spacetravelships_ship_core.png",
+        "spacetraveltechnology_machine.png^spacetravelships_ship_core.png",
     },
     paramtype2 = "facedir",
     groups = {cracky = 2},

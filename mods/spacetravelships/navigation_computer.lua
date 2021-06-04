@@ -111,30 +111,30 @@ local function cellContainBorders(cell)
 end
 
 local function getMapGridImageMulticells(cellData)
-    local resultImage = "spacemap_empty.png";
+    local resultImage = "spacetravelships_spacemap_empty.png";
 
     if (cellContainSelf(cellData)) then -- If cells contain current ship
-        resultImage = resultImage.."^spacemap_borders.png^spacemap_self.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png^spacetravelships_spacemap_self.png";
     elseif (cellContainObject(cellData, spacetravelships.space_object_types.ship)) then -- If cells contain ship
-        resultImage = resultImage.."^spacemap_borders.png^spacemap_ship.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png^spacetravelships_spacemap_ship.png";
     elseif (cellContainObject(cellData, spacetravelships.space_object_types.station)) then -- If cells contain station
-        resultImage = resultImage.."^spacemap_borders.png^spacemap_station.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png^spacetravelships_spacemap_station.png";
     elseif (cellContainBorders(cellData)) then -- No objects, just borders
-        resultImage = resultImage.."^spacemap_borders.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png";
     end
 
     if (#cellData.objects > 1) then -- More than 1 object
-        resultImage = resultImage.."^spacemap_multi.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_multi.png";
     end
 
     return resultImage;
 end
 
 local function getMapGridImageSingleCell(cellData, currentDirection)
-    local resultImage = "spacemap_empty.png";
+    local resultImage = "spacetravelships_spacemap_empty.png";
 
     if (cellContainSelf(cellData)) then -- If cells contain current ship
-        resultImage = resultImage.."^spacemap_borders.png^spacemap_self.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png^spacetravelships_spacemap_self.png";
     elseif (cellContainObject(cellData, spacetravelships.space_object_types.ship)) then -- If cells contain ship
         local directionDiff = currentDirection - cellData.objects[1].core_direction;
         if (directionDiff > 0) then
@@ -147,11 +147,11 @@ local function getMapGridImageSingleCell(cellData, currentDirection)
         elseif (directionDiff == -270) then -- <v
             transformation = "^[transformR270";
         end
-        return "spacemap_empty.png^spacemap_borders.png^spacemap_ship.png"..transformation;
+        return "spacetravelships_spacemap_empty.png^spacetravelships_spacemap_borders.png^spacetravelships_spacemap_ship.png"..transformation;
     elseif (cellContainObject(cellData, spacetravelships.space_object_types.station)) then -- If cells contain station
-        resultImage = resultImage.."^spacemap_borders.png^spacemap_station.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png^spacetravelships_spacemap_station.png";
     elseif (cellContainBorders(cellData)) then -- No objects, just borders
-        resultImage = resultImage.."^spacemap_borders.png";
+        resultImage = resultImage.."^spacetravelships_spacemap_borders.png";
     end
 
     return resultImage;
@@ -185,7 +185,7 @@ local function get_map_grid_formspec(areaGrid, currentDirection, selectedZone, z
 
                 local selected = selectedZone ~= nil and selectedZone.x == x and selectedZone.y == y;
                 if (selected) then
-                    image = image.."^spacemap_selected.png";
+                    image = image.."^spacetravelships_spacemap_selected.png";
                 end
 
                 local name = gridButtonPrefix..x.."_"..y;
@@ -688,12 +688,12 @@ end
 minetest.register_node("spacetravelships:navigation_computer", {
     description = "Navigation Computer",
     tiles = {
-        "machine.png",
-        "machine.png",
-        "machine.png",
-        "machine.png",
-        "machine.png",
-        "machine.png^navigation_computer_front.png"
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_navigation_computer_front.png"
     },
     paramtype2 = "facedir",
     groups = {cracky = 2},

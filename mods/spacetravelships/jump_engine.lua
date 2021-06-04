@@ -91,12 +91,12 @@ end
 minetest.register_node("spacetravelships:jump_engine", {
     description = "Jump Engine",
     tiles = {
-        "machine.png^spacetravelships_engine.png",
-        "machine.png^spacetravelships_engine.png",
-        "machine.png^spacetravelships_engine.png",
-        "machine.png^spacetravelships_engine.png",
-        "machine.png^spacetravelships_engine.png",
-        "machine.png^spacetravelships_engine.png"
+        "spacetraveltechnology_machine.png^spacetravelships_engine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_engine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_engine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_engine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_engine.png",
+        "spacetraveltechnology_machine.png^spacetravelships_engine.png"
     },
     groups = {
         [spacetravelships.constants.group_engine] = 1,

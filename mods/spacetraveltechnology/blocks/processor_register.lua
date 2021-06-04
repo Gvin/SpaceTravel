@@ -8,8 +8,8 @@ local metaRequiredEnergy = "spacetraveltechnology:required_energy";
 function spacetraveltechnology.get_processing_machine_formspec(item_percent)
 	return "size[8,8.5]"..
 		"list[context;src;2.75,1.5;1,1;]"..
-		"image[3.75,1.5;1,1;gui_furnace_arrow_bg.png^[lowpart:"..
-		(item_percent)..":gui_furnace_arrow_fg.png^[transformR270]"..
+		"image[3.75,1.5;1,1;spacetraveltechnology_gui_arrow_bg.png^[lowpart:"..
+		(item_percent)..":spacetraveltechnology_gui_arrow_fg.png^[transformR270]"..
 		"list[context;dst;4.75,1.5;2,2;]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..

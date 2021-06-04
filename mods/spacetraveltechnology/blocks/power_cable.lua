@@ -15,12 +15,12 @@ local node_box = {
 minetest.register_node("spacetraveltechnology:power_cable", {
     description = "Power Cable",
     tiles = {
-		"power_cable.png",
-		"power_cable.png",
-		"power_cable.png",
-		"power_cable.png",
-		"power_cable.png",
-		"power_cable.png"
+		"spacetraveltechnology_power_cable.png",
+		"spacetraveltechnology_power_cable.png",
+		"spacetraveltechnology_power_cable.png",
+		"spacetraveltechnology_power_cable.png",
+		"spacetraveltechnology_power_cable.png",
+		"spacetraveltechnology_power_cable.png"
 	},
 	wield_image = "power_cable_wield.png",
 	inventory_image = "power_cable_wield.png",

@@ -13,10 +13,13 @@ dofile(modPath.."/register_space_objects.lua");
 dofile(modPath.."/ship_core.lua");
 dofile(modPath.."/navigation_computer.lua");
 dofile(modPath.."/jump_engine.lua");
+dofile(modPath.."/emergency_light.lua");
+dofile(modPath.."/illuminator.lua");
+dofile(modPath.."/build_ship_token.lua");
 
 minetest.register_node("spacetravelships:ship_hull_light", {
     description = "Light Ship Hull",
-    tiles = {"ship_hull_light.png"},
+    tiles = {"spacetravelships_ship_hull_light.png"},
     groups = {cracky = 2},
     is_ground_content = false
 });

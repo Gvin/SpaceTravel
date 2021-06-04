@@ -8,8 +8,8 @@ local defaultProducingPowerRate = 5;
 function spacetraveltechnology.get_fuel_generator_active_formspec(fuel_percent)
 	return "size[8,8.5]"..
 		"list[context;fuel;3.5,2.5;1,1;]"..
-		"image[3.5,1.5;1,1;fuel_generator_fire_bg.png^[lowpart:"..
-		(fuel_percent)..":fuel_generator_fire_fg.png]"..
+		"image[3.5,1.5;1,1;spacetraveltechnology_fuel_generator_fire_bg.png^[lowpart:"..
+		(fuel_percent)..":spacetraveltechnology_fuel_generator_fire_fg.png]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..
 		"listring[context;fuel]"..
@@ -20,7 +20,7 @@ end
 function spacetraveltechnology.get_fuel_generator_inactive_formspec()
 	return "size[8,8.5]"..
 		"list[context;fuel;3.5,2.5;1,1;]"..
-		"image[3.5,1.5;1,1;fuel_generator_fire_bg.png]"..
+		"image[3.5,1.5;1,1;spacetraveltechnology_fuel_generator_fire_bg.png]"..
 		"list[current_player;main;0,4.25;8,1;]"..
 		"list[current_player;main;0,5.5;8,3;8]"..
 		"listring[context;fuel]"..
@@ -171,12 +171,12 @@ end
 minetest.register_node("spacetraveltechnology:fuel_generator", {
     description = "Fuel Generator",
     tiles = {
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^fuel_generator_front.png"
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_fuel_generator_front.png"
 	},
 	paramtype2 = "facedir",
     groups = {cracky = 2, [spacetraveltechnology.energy_group] = 1},
@@ -231,13 +231,13 @@ minetest.register_node("spacetraveltechnology:fuel_generator", {
 minetest.register_node("spacetraveltechnology:fuel_generator_active", {
 	description = "Fuel Generator",
 	tiles = {
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
-		"machine.png^machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
+		"spacetraveltechnology_machine.png^spacetraveltechnology_machine_output.png",
 		{
-			image = "machine.png^fuel_generator_front_active.png",
+			image = "spacetraveltechnology_machine.png^spacetraveltechnology_fuel_generator_front_active.png",
 			backface_culling = false,
 			animation = {
 				type = "vertical_frames",

@@ -61,7 +61,7 @@ spacetraveltechnology.blocks.register_accumulator = function(name, description, 
         groups = {cracky = 2, [spacetraveltechnology.energy_group] = 1},
         is_ground_content = false,
         
-        drop = "spacetraveltechnology:accumulator_small",
+        drop = name,
         
         drawtype = "nodebox",
         is_ground_content = false,
