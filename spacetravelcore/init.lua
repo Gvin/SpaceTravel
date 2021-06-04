@@ -7,6 +7,7 @@ spacetravelcore = {};
 
 spacetravelcore.get_translator = S;
 
+dofile(modPath.."/functions.lua");
 dofile(modPath.."/register_recipes.lua");
 
 spacetravelcore.save_to_file = function(fileName, data)
