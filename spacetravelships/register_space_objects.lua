@@ -95,6 +95,34 @@ spacetravelships.register_space_object = function(objectData)
     minetest.log("Space object registered: "..objectData.id);
 end
 
+spacetravelships.get_engine_power = function(id)
+    local cube = spacetravelships.space_objects_cubes[id];
+    if (cube == nil) then
+        error("Object with such id is not registered. ID="..id, 2);
+    end
+
+    local totalPower = 0;
+    for x = cube.min_x, cube.max_x do
+        for z = cube.min_z, cube.max_z do
+            for y = cube.min_y, cube.max_y do
+                local position = {
+                    x = x,
+                    z = z,
+                    y = y
+                };
+                local node = minetest.get_node(position);
+                if (minetest.get_item_group(node.name, spacetravelships.constants.group_engine) == 1) then
+                    local meta = minetest.get_meta(position);
+                    local power = meta:get_int(spacetravelships.constants.meta_engine_power);
+                    totalPower = totalPower + power;
+                end
+            end
+        end
+    end
+    
+    return totalPower;
+end
+
 spacetravelships.update_space_object = function(id, title, core_position, size)
     local obj = findSpaceObject(id);
     if (obj == nil) then
@@ -178,6 +206,17 @@ local function shiftCube(cube, delta)
 end
 
 
+spacetravelships.can_move = function(id)
+    local cube = spacetravelships.space_objects_cubes[id];
+    if (cube == nil) then
+        error("Object with such id is not registered. ID="..id, 2);
+    end
+
+    local volume = (cube.max_x - cube.min_x) * (cube.max_y - cube.min_y) * (cube.max_z - cube.min_z);
+    local power = spacetravelships.get_engine_power(id);
+    return power >= volume;
+end
+
 spacetravelships.can_move_to_position = function(id, targetPosition)
     local movingObject = findSpaceObject(id);
     if (movingObject == nil) then
@@ -239,6 +278,9 @@ local function move_objects(oldPos, newPos)
 end
 
 spacetravelships.move_to_position = function(id, targetPosition)
+    if (not spacetravelships.can_move(id)) then
+        return false;
+    end
     if (not spacetravelships.can_move_to_position(id, targetPosition)) then
         return false;
     end
@@ -255,24 +297,39 @@ spacetravelships.move_to_position = function(id, targetPosition)
         z = targetPosition.z - obj.core_position.z
     };
 
-    for x = cube.min_x, cube.max_x do
-    for y = cube.min_y, cube.max_y do
-    for z = cube.min_z, cube.max_z do
-        local oldPos = {
-            x = x,
-            y = y,
-            z = z
-        };
+    local targetAreaPos1 = {
+        x = cube.min_x + delta.x,
+        y = cube.min_y + delta.y,
+        z = cube.min_z + delta.z
+    };
+    local targetAreaPos2 = {
+        x = cube.max_x + delta.x,
+        y = cube.max_y + delta.y,
+        z = cube.max_z + delta.z
+    };
 
-        local newPos = {
-            x = x + delta.x,
-            y = y + delta.y,
-            z = z + delta.z
-        };
-
-        move_node_and_meta(oldPos, newPos);
-        move_objects(oldPos, newPos);
-    end end end
+    minetest.emerge_area(targetAreaPos1, targetAreaPos2, function(blockpos, action, calls_remaining, param)
+        if (calls_remaining == 0) then -- area fully loaded
+            for x = cube.min_x, cube.max_x do
+            for y = cube.min_y, cube.max_y do
+            for z = cube.min_z, cube.max_z do
+                local oldPos = {
+                    x = x,
+                    y = y,
+                    z = z
+                };
+        
+                local newPos = {
+                    x = x + delta.x,
+                    y = y + delta.y,
+                    z = z + delta.z
+                };
+        
+                move_node_and_meta(oldPos, newPos);
+                move_objects(oldPos, newPos);
+            end end end
+        end
+    end);
 
     return true;
 end

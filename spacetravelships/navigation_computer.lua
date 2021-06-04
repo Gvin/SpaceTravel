@@ -36,6 +36,8 @@ local controlTargetYPlus10Btn = "control_TargetYPlus10Btn";
 local controlTargetYMinus10Btn = "control_TargetYMinus10Btn";
 local controlTargetYPlus100Btn = "control_TargetYPlus100Btn";
 local controlTargetYMinus100Btn = "control_TargetYMinus100Btn";
+local controlTargetYPlus1000Btn = "control_TargetYPlus1000Btn";
+local controlTargetYMinus1000Btn = "control_TargetYMinus1000Btn";
 
 local gridButtonPrefix = "gridBtn_";
 
@@ -50,7 +52,6 @@ local gridRadius = 20;
 local defaultMapShift = math.floor(gridRadius - mapDisplaySize / 2);
 local maxTargetY = 29000;
 local minTargetY = -29000;
-local maxDiffY = 100;
 
 local function get_navigation_computer_inactive_formspec()
     return "size[15,10]"..
@@ -63,14 +64,15 @@ local function getTabsButtons()
         "button[2,0.2;3,1;"..tabButtonConfig..";Configuration]";
 end
 
-local function get_navigation_computer_configuration_formspec(shipId, shipTitle, size)
+local function get_navigation_computer_configuration_formspec(shipTitle, size)
+    local volume = (size.left + size.right + 1) * (size.front + size.back + 1) * (size.up + size.down + 1);
     return 
         "size[15,10]"..
         getTabsButtons()..
 
         "label[0.2,1.2;Configuration]"..
 
-        "label[4,1.2;Ship ID: "..shipId.."]"..
+        "label[4,1.2;Ship Volume: "..volume.."]"..
 
         "field[0.5,3;1.5,1;"..configurationSizeLeftField..";Left;"..size.left.."]"..
         "field[3.5,3;1.5,1;"..configurationSizeRightField..";Right;"..size.right.."]"..
@@ -230,12 +232,14 @@ local function get_jump_controls(canJump, targetY)
     local targetYText = minetest.formspec_escape("Target Y: "..targetY);
     local result = 
         "label[7.5, 3.5;"..targetYText.."]"..
-        "button[9.5, 3.3; 1, 1;"..controlTargetYPlus1Btn..";+1]"..
-        "button[10.5, 3.3; 1, 1;"..controlTargetYMinus1Btn..";-1]"..
-        "button[11.5, 3.3; 1.2, 1;"..controlTargetYPlus10Btn..";+10]"..
-        "button[12.5, 3.3; 1.2, 1;"..controlTargetYMinus10Btn..";-10]"..
-        "button[9.5, 4.3; 1, 1;"..controlTargetYPlus100Btn..";+100]"..
-        "button[10.5, 4.3; 1, 1;"..controlTargetYMinus100Btn..";-100]";
+        "button[10, 3.3; 1, 1;"..controlTargetYPlus1Btn..";+1]"..
+        "button[11, 3.3; 1, 1;"..controlTargetYMinus1Btn..";-1]"..
+        "button[12, 3.3; 1.2, 1;"..controlTargetYPlus10Btn..";+10]"..
+        "button[13, 3.3; 1.2, 1;"..controlTargetYMinus10Btn..";-10]"..
+        "button[10, 4.3; 1, 1;"..controlTargetYPlus100Btn..";+100]"..
+        "button[11, 4.3; 1, 1;"..controlTargetYMinus100Btn..";-100]"..
+        "button[12, 4.3; 1.2, 1;"..controlTargetYPlus1000Btn..";+1000]"..
+        "button[13, 4.3; 1.2, 1;"..controlTargetYMinus1000Btn..";-1000]";
     
     if (not canJump) then
         return result;
@@ -318,9 +322,6 @@ local function findGridButtonEvent(fields)
 end
 
 local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
-    local currentMaxTargetY = math.min(spaceObject.core_position.y + maxDiffY, maxTargetY - spaceObject.size.up);
-    local currentMinTargetY = math.max(spaceObject.core_position.y - maxDiffY, minTargetY + spaceObject.size.down);
-
     if (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
         local zoomStep = meta:get_int(metaZoomStep);
         zoomStep = math.max(1, zoomStep);
@@ -376,27 +377,35 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
 
     elseif (fieldsContainButton(fields, controlTargetYPlus1Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.min(currentMaxTargetY, targetY + 1);
+        local newTargetY = math.min(maxTargetY - spaceObject.size.up, targetY + 1);
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYPlus10Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.min(currentMaxTargetY, targetY + 10);
+        local newTargetY = math.min(maxTargetY - spaceObject.size.up, targetY + 10);
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYPlus100Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.min(currentMaxTargetY, targetY + 100);
+        local newTargetY = math.min(maxTargetY - spaceObject.size.up, targetY + 100);
+        meta:set_int(metaTargetY, newTargetY);
+    elseif (fieldsContainButton(fields, controlTargetYPlus1000Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        local newTargetY = math.min(maxTargetY - spaceObject.size.up, targetY + 1000);
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYMinus1Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.max(currentMinTargetY, targetY - 1);
+        local newTargetY = math.max(minTargetY + spaceObject.size.down, targetY - 1);
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYMinus10Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.max(currentMinTargetY, targetY - 10);
+        local newTargetY = math.max(minTargetY + spaceObject.size.down, targetY - 10);
         meta:set_int(metaTargetY, newTargetY);
     elseif (fieldsContainButton(fields, controlTargetYMinus100Btn)) then
         local targetY = meta:get_int(metaTargetY);
-        local newTargetY = math.max(currentMinTargetY, targetY - 100);
+        local newTargetY = math.max(minTargetY + spaceObject.size.down, targetY - 100);
+        meta:set_int(metaTargetY, newTargetY);
+    elseif (fieldsContainButton(fields, controlTargetYMinus1000Btn)) then
+        local targetY = meta:get_int(metaTargetY);
+        local newTargetY = math.max(minTargetY + spaceObject.size.down, targetY - 1000);
         meta:set_int(metaTargetY, newTargetY);
 
     elseif (fieldsContainButton(fields, controlJumpBtn)) then -- Jump
@@ -631,9 +640,7 @@ local function getFormspecForActiveComputer(meta, spaceObject, coreMeta)
         end 
 
         local storedTargetY = meta:get_int(metaTargetY);
-        local currentMaxTargetY = math.min(spaceObject.core_position.y + maxDiffY, maxTargetY - spaceObject.size.down);
-        local currentMinTargetY = math.max(spaceObject.core_position.y - maxDiffY, minTargetY + spaceObject.size.up);
-        local targetY = math.max(currentMinTargetY, math.min(currentMaxTargetY, storedTargetY));
+        local targetY = math.max(minTargetY + spaceObject.size.up, math.min(maxTargetY - spaceObject.size.down, storedTargetY));
         if (targetY ~= storedTargetY) then
             meta:set_int(metaTargetY, targetY);
         end
@@ -647,16 +654,15 @@ local function getFormspecForActiveComputer(meta, spaceObject, coreMeta)
                 z = targetMapZone.size.min_z,
                 y = targetY
             }
-            canJump = spacetravelships.can_move_to_position(shipId, targetPosition);
+            canJump = spacetravelships.can_move(shipId) and spacetravelships.can_move_to_position(shipId, targetPosition);
         end
         
         return get_navigation_computer_control_formspec(areaGrid, coreDirection, selectedZone, zoomLevel, mapShift, canJump, targetY);
 
     elseif (menuTabName == tabNameConfig) then
-        local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
         local shipTitle = coreMeta:get_string(spacetravelships.constants.meta_ship_core_title);
         local shipSize = meta_get_object(coreMeta, spacetravelships.constants.meta_ship_core_size);
-        return get_navigation_computer_configuration_formspec(shipId, shipTitle, shipSize);
+        return get_navigation_computer_configuration_formspec(shipTitle, shipSize);
     end
 
     minetest.log("Unknown menu tab name: "..menuTabName);

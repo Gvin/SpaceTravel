@@ -4,6 +4,8 @@ local metaNozzlePosition = "spacetravelships:nozzle_position";
 local meta_set_object = spacetravelcore.meta_set_object;
 local meta_get_object = spacetravelcore.meta_get_object;
 
+local enginePower = 50;
+
 local function getNozzleExpectedPosition(position, shipDirection)
     if (shipDirection == 3) then -- X+
         return {
@@ -47,6 +49,10 @@ local function positionEquals(pos1, pos2)
         pos1.z == pos2.z;
 end
 
+local function tryConsumeEnergy()
+    return true;
+end
+
 local function correctNozzle(position)
     local owningObject = spacetravelships.get_owning_object(position);
     if (owningObject ~= nil) then
@@ -65,11 +71,21 @@ local function correctNozzle(position)
                 meta_set_object(meta, metaNozzlePosition, expectedNozzlePosition);
             end
         end
+
+        if (minetest.get_node(expectedNozzlePosition).name == "spacetravelships:jump_engine_nozzle") then -- If nozzle exists
+            local active = tryConsumeEnergy();
+            if (active) then
+                meta:set_int(spacetravelships.constants.meta_engine_power, enginePower);
+            else
+                meta:set_int(spacetravelships.constants.meta_engine_power, 0);
+            end
+        end
     end
 end
 
 local function jump_engine_node_timer(position, elapsed)
     correctNozzle(position);
+    return true;
 end
 
 minetest.register_node("spacetravelships:jump_engine", {
