@@ -8,9 +8,12 @@ spacetravelships.get_translator = S;
 
 dofile(modPath.."/constants.lua");
 
+dofile(modPath.."/functions.lua");
+
 dofile(modPath.."/register_space_objects.lua");
 
 dofile(modPath.."/ship_core.lua");
+dofile(modPath.."/station_core.lua");
 dofile(modPath.."/navigation_computer.lua");
 dofile(modPath.."/jump_engine.lua");
 dofile(modPath.."/emergency_light.lua");

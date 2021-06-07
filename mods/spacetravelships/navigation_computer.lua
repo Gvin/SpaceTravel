@@ -340,7 +340,6 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
         end
         mapShift.x = math.max(0, mapShift.x - 1);
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
-        minetest.log(minetest.serialize(mapShift))
     elseif (fieldsContainButton(fields, controlMapShiftRightBtn)) then -- Map Shift Right
         local mapShift = meta_get_object(meta, metaMapShift);
         if (mapShift == nil) then
@@ -351,7 +350,6 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
         end
         mapShift.x = mapShift.x + 1;
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
-        minetest.log(minetest.serialize(mapShift))
     elseif (fieldsContainButton(fields, controlMapShiftUpBtn)) then -- Map Shift Up
         local mapShift = meta_get_object(meta, metaMapShift);
         if (mapShift == nil) then
@@ -362,7 +360,6 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
         end
         mapShift.y = math.max(0, mapShift.y - 1);
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
-        minetest.log(minetest.serialize(mapShift))
     elseif (fieldsContainButton(fields, controlMapShiftDownBtn)) then -- Map Shift Down
         local mapShift = meta_get_object(meta, metaMapShift);
         if (mapShift == nil) then
@@ -373,7 +370,6 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
         end
         mapShift.y = mapShift.y + 1;
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
-        minetest.log(minetest.serialize(mapShift))
 
     elseif (fieldsContainButton(fields, controlTargetYPlus1Btn)) then
         local targetY = meta:get_int(metaTargetY);

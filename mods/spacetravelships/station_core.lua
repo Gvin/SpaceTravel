@@ -18,7 +18,7 @@ local function convertDirection(dir)
     error("Unable to convert direction: "..dir);
 end
 
-local function registerShipCore(position)
+local function registerStationCore(position)
     local meta = minetest.get_meta(position);
 
     local id = meta:get_string(spacetravelships.constants.meta_ship_core_id);
@@ -48,7 +48,7 @@ local function registerShipCore(position)
 
     if (not spacetravelships.get_is_registered(id)) then
         spacetravelships.register_space_object({
-            type = spacetravelships.space_object_types.ship,
+            type = spacetravelships.space_object_types.station,
             id = id,
             title = title,
             core_position = position,
@@ -62,13 +62,13 @@ local function registerShipCore(position)
     end
 end
 
-local function ship_core_node_timer(position, elapsed)
-    registerShipCore(position);
+local function station_core_node_timer(position, elapsed)
+    registerStationCore(position);
     return false;
 end
 
-minetest.register_node(spacetravelships.constants.ship_core_node, {
-    description = "Space Ship Core",
+minetest.register_node(spacetravelships.constants.station_core_node, {
+    description = "Space Station Core",
     tiles = {
         "spacetraveltechnology_machine.png^spacetravelships_ship_core_top.png^[transformFY",
         "spacetraveltechnology_machine.png",
@@ -82,9 +82,12 @@ minetest.register_node(spacetravelships.constants.ship_core_node, {
     is_ground_content = false,
     light_source = 10,
 
-    on_timer = ship_core_node_timer,
+    on_timer = station_core_node_timer,
 
     on_construct = function(position)
+        local meta = minetest.get_meta(position);
+        meta:set_string("infotext", "Space Station Core");
+
         minetest.get_node_timer(position):start(0.5);
     end,
 
@@ -99,10 +102,10 @@ minetest.register_node(spacetravelships.constants.ship_core_node, {
 });
 
 minetest.register_lbm({
-    name = "spacetravelships:register_ship_cores",
-    nodenames = {spacetravelships.constants.ship_core_node},
+    name = "spacetravelships:register_station_cores",
+    nodenames = {spacetravelships.constants.station_core_node},
     run_at_every_load = true,
     action = function(position, node)
-        registerShipCore(position);
+        registerStationCore(position);
     end
 });

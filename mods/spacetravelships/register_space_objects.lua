@@ -75,6 +75,16 @@ local function calculateObjectCube(position, size)
     return cube;
 end
 
+local function checkContains(cube, point)
+    return
+        point.x >= cube.min_x and
+        point.x <= cube.max_x and
+        point.y >= cube.min_y and
+        point.y <= cube.max_y and
+        point.z >= cube.min_z and
+        point.z <= cube.max_z;
+end
+
 -- objectData: {type, id, title, core_position, core_direction, size}
 spacetravelships.register_space_object = function(objectData)
     if (objectData == nil) then
@@ -123,6 +133,10 @@ spacetravelships.get_engine_power = function(id)
     return totalPower;
 end
 
+spacetravelships.get_space_object = function(id)
+    return findSpaceObject(id);
+end
+
 spacetravelships.update_space_object = function(id, title, core_position, size)
     local obj = findSpaceObject(id);
     if (obj == nil) then
@@ -134,6 +148,70 @@ spacetravelships.update_space_object = function(id, title, core_position, size)
 
     local cube = calculateObjectCube(core_position, size);
     spacetravelships.space_objects_cubes[id] = cube;
+end
+
+local function hasSpaceForPlayer(position)
+    return 
+        minetest.get_node(position).name == "air" and
+        minetest.get_node({
+            x = position.x,
+            z = position.z,
+            y = position.y + 1
+        }).name == "air";
+end
+
+local function findFreeSpaceNear(position, cube)
+    for length = 1, 10 do
+
+        local posPlusX = {
+            x = position.x + length,
+            z = position.z,
+            y = position.y
+        };
+        if (hasSpaceForPlayer(posPlusX) and  checkContains(cube, posPlusX)) then
+            return posPlusX;
+        end
+
+        local posMinusX = {
+            x = position.x - length,
+            z = position.z,
+            y = position.y
+        };
+        if (hasSpaceForPlayer(posMinusX) and checkContains(cube, posMinusX)) then
+            return posMinusX;
+        end
+
+        local posPlusZ = {
+            z = position.z + length,
+            x = position.x,
+            y = position.y
+        };
+        if (hasSpaceForPlayer(posPlusZ) and checkContains(cube, posPlusZ)) then
+            return posPlusZ;
+        end
+
+        local posMinusZ = {
+            z = position.z - length,
+            x = position.x,
+            y = position.y
+        };
+        if (hasSpaceForPlayer(posMinusZ) and checkContains(cube, posPlusZ)) then
+            return posPlusZ;
+        end
+    end
+
+    error("Position for player not found.", 2);
+end
+
+spacetravelships.teleport_player_to_core = function(id, player)
+    local obj = findSpaceObject(id);
+    if (obj == nil) then
+        error("Object with such id is not registered. ID="..id, 2);
+    end
+
+    local cube = spacetravelships.space_objects_cubes[id];
+    local targetPosition = findFreeSpaceNear(obj.core_position, cube);
+    player:set_pos(targetPosition);
 end
 
 spacetravelships.scan_for_objects = function(position, radius)
@@ -182,16 +260,6 @@ spacetravelships.unregister_space_object = function(objectId)
 
     table.remove(spacetravelships.space_objects, objIndex);
     spacetravelships.space_objects_cubes[objectId] = nil;
-end
-
-local function checkContains(cube, point)
-    return
-        point.x >= cube.min_x and
-        point.x <= cube.max_x and
-        point.y >= cube.min_y and
-        point.y <= cube.max_y and
-        point.z >= cube.min_z and
-        point.z <= cube.max_z;
 end
 
 local function shiftCube(cube, delta)
