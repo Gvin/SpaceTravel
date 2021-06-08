@@ -1,8 +1,8 @@
 local function getShipSpawnComputerFormspec()
     return 
-        "size[15,10]"..
+        "size[5,5]"..
         "label[1, 1;New Ship Founding]"..
-        "button_exit[1, 4; 3, 1;foundShipBtn;Found New Ship]";
+        "button_exit[1, 3; 3, 1;foundShipBtn;Found New Ship]";
 end
 
 local function tryRemoveNewShipToken(player)
@@ -66,7 +66,12 @@ end
 minetest.register_node("spacetravelmap:ship_found_computer", {
     description = "Ship Found Computer",
     tiles = {
-
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png",
+        "spacetraveltechnology_machine.png^spacetravelmap_ship_found_computer.png",
+        "spacetraveltechnology_machine.png^spacetravelmap_ship_found_computer.png",
+        "spacetraveltechnology_machine.png^spacetravelmap_ship_found_computer.png",
+        "spacetraveltechnology_machine.png^spacetravelmap_ship_found_computer.png"
     },
     on_timer = ship_spawn_computer_timer,
     on_construct = function(position)

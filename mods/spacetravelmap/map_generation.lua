@@ -3,15 +3,22 @@ minetest.clear_registered_biomes();
 minetest.clear_registered_ores();
 minetest.clear_registered_decorations();
 
+local timeSet = false;
+
 minetest.register_on_mapgen_init(function(mgparams)
 	minetest.set_mapgen_params({
         mgname='singlenode', 
-        water_level=-32000, 
-        flags = "nolight"
+        water_level=-32000
     });
 end);
 
 minetest.register_on_generated(function(minp, maxp, seed)
+    if (not timeSet) then
+        minetest.set_timeofday(0); -- Midnight
+        minetest.settings:set("time_speed", 0);
+        timeSet = true;
+    end
+
 	local position = {x = 0, y = 0, z = 0};
     if (
         position.x >= minp.x and position.x <= maxp.x and
@@ -59,4 +66,17 @@ end);
 minetest.register_on_respawnplayer(function(player)
 	spawnPlayer(player);
 	return true
+end);
+
+minetest.register_on_joinplayer(function(player, last_login)
+    minetest.after(0, function()
+        player:set_sky("#ffffff", "skybox", {
+            "spacetravelmap_skybox_stars_top.png",
+            "spacetravelmap_skybox_stars_bottom.png",
+            "spacetravelmap_skybox_stars_left.png",
+            "spacetravelmap_skybox_stars_right.png",
+            "spacetravelmap_skybox_stars_back.png",
+            "spacetravelmap_skybox_stars_front.png"
+        }, false);
+    end);
 end);
