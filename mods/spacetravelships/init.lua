@@ -12,12 +12,15 @@ dofile(modPath.."/functions.lua");
 
 dofile(modPath.."/register_space_objects.lua");
 
+-- Ship parts
 dofile(modPath.."/ship_core.lua");
 dofile(modPath.."/station_core.lua");
 dofile(modPath.."/navigation_computer.lua");
 dofile(modPath.."/jump_engine.lua");
 dofile(modPath.."/emergency_light.lua");
 dofile(modPath.."/illuminator.lua");
+dofile(modPath.."/gravity_generator.lua");
+
 dofile(modPath.."/build_ship_token.lua");
 
 minetest.register_node("spacetravelships:ship_hull_light", {
@@ -42,4 +45,4 @@ minetest.register_craftitem("spacetravelships:gps", {
 
         return nil;
     end
-})
+});

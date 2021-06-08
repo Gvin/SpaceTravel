@@ -65,7 +65,7 @@ end);
 
 minetest.register_on_respawnplayer(function(player)
 	spawnPlayer(player);
-	return true
+	return true;
 end);
 
 minetest.register_on_joinplayer(function(player, last_login)
@@ -79,4 +79,8 @@ minetest.register_on_joinplayer(function(player, last_login)
             "spacetravelmap_skybox_stars_front.png"
         }, false);
     end);
+end);
+
+minetest.register_globalstep(function(dtime)
+    spacetravelmap.update_players_gravity();
 end);

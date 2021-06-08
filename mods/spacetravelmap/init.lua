@@ -6,4 +6,6 @@ dofile(modPath.."/build_from_library.lua");
 
 dofile(modPath.."/ship_found_computer.lua");
 
+dofile(modPath.."/physics.lua");
+
 dofile(modPath.."/map_generation.lua");

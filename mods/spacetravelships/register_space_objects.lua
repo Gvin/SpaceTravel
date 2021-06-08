@@ -311,6 +311,36 @@ spacetravelships.get_is_registered = function(id)
     return findSpaceObject(id) ~= nil;
 end
 
+local function getGravityGeneratorsPower(cube)
+    local totalPower = 0;
+    for x = cube.min_x, cube.max_x do
+        for y = cube.min_y, cube.max_y do
+            for z = cube.min_z, cube.max_z do
+                local position = {x = x, y = y, z = z};
+                local node = minetest.get_node(position);
+                if (minetest.get_item_group(node.name, spacetravelships.constants.group_gravity_generator) == 1) then
+                    local meta = minetest.get_meta(position);
+                    local power = meta:get_int(spacetravelships.constants.meta_gravity_generator_power);
+                    totalPower = totalPower + power;
+                end
+            end
+        end
+    end
+    return totalPower;
+end
+
+spacetravelships.get_has_gravity = function(id)
+    local cube = spacetravelships.space_objects_cubes[id];
+    if (cube == nil) then
+        error("Space object with such id not found. ID="..id, 2);
+    end
+
+    local gravityGeneratorsPower = getGravityGeneratorsPower(cube);
+    local volume = (cube.max_x - cube.min_x) * (cube.max_y - cube.min_y) * (cube.max_z - cube.min_z);
+
+    return gravityGeneratorsPower >= volume;
+end
+
 -- Gets ship that owns specific node position
 spacetravelships.get_owning_object = function(position)
     for _, obj in pairs(spacetravelships.space_objects) do -- for each object
