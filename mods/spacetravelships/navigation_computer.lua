@@ -1,7 +1,7 @@
 
 local metaMenuTab = "spacetravelships:menu_tab";
-local metaAreaGrid = "spacetravelships:area_grid";
 local metaSelectedZone = "spacetravelships:selected_zone";
+local metaSelectedZoneData = "spacetravelships:selected_zone_data";
 local metaZoomStep = "spacetravelships:zoom_step";
 local metaMapShift = "spacetravelships:map_shift";
 local metaTargetY = "spacetravelships:target_y";
@@ -30,6 +30,7 @@ local controlMapShiftRightBtn = "control_MapShiftRightBtn";
 local controlMapShiftUpBtn = "control_MapShiftUpBtn";
 local controlMapShiftDownBtn = "control_MapShiftDownBtn";
 local controlJumpBtn = "control_JumpBtn";
+local controlCenterSelfBtn = "control_CenterSelfBtn";
 local controlTargetYPlus1Btn = "control_TargetYPlus1Btn";
 local controlTargetYMinus1Btn = "control_TargetYMinus1Btn";
 local controlTargetYPlus10Btn = "control_TargetYPlus10Btn";
@@ -48,7 +49,7 @@ local zoomSteps = {
 };
 
 local mapDisplaySize = 21;
-local gridRadius = 20;
+local gridRadius = 200;
 local defaultMapShift = math.floor(gridRadius - mapDisplaySize / 2);
 local maxTargetY = 29000;
 local minTargetY = -29000;
@@ -268,19 +269,16 @@ local function get_navigation_computer_control_formspec(areaGrid, currentDirecti
         "button[0.5,9.5;1.5,1;"..controlZoomInBtn..";Zoom +]"..
         "button[1.8,9.5;1.5,1;"..controlZoomOutBtn..";Zoom -]"..
         "label[3.5,9.7;1X"..zoomLevel.."]"..
+
+        "button[6, 9.7; 3, 1;"..controlCenterSelfBtn..";Center Self]"..
         
         get_selected_zone_formspec(areaGrid, selectedZone)..
         
         get_jump_controls(canJump, targetY);
 end
 
-local function meta_get_object(meta, name)
-    local str = meta:get_string(name);
-    if (not str) then
-        return nil;
-    end
-    return minetest.deserialize(str);
-end
+local meta_get_object = spacetravelcore.meta_get_object;
+local meta_set_object = spacetravelcore.meta_set_object;
 
 local function fieldsContainButton(fields, buttonName)
     for name, _ in pairs(fields) do
@@ -321,56 +319,65 @@ local function findGridButtonEvent(fields)
     return nil;
 end
 
+local function getMapShift(meta)
+    local mapShift = meta_get_object(meta, metaMapShift);
+    if (mapShift == nil) then
+        mapShift = {
+            x = 0,
+            y = 0
+        };
+        meta_set_object(meta, metaMapShift, mapShift);
+    end
+
+    return mapShift;
+end
+
 local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
+    ---------- ZOOM
     if (fieldsContainButton(fields, controlZoomOutBtn)) then -- Zoom -
-        local zoomStep = meta:get_int(metaZoomStep);
-        zoomStep = math.max(1, zoomStep);
-        meta:set_int(metaZoomStep, math.min(#zoomSteps, zoomStep + 1));
+        local zoomStep = math.max(1, meta:get_int(metaZoomStep));
+        local newZoomStep = math.min(#zoomSteps, zoomStep + 1);
+        meta:set_int(metaZoomStep, newZoomStep);
+
+        local oldZoomLevel = zoomSteps[zoomStep];
+        local newZoomLevel = zoomSteps[newZoomStep];
+        local mapShift = getMapShift(meta);
+        mapShift = {
+            x = math.floor(mapShift.x / (newZoomLevel / oldZoomLevel)),
+            y = math.floor(mapShift.y / (newZoomLevel / oldZoomLevel))
+        }
+        meta_set_object(meta, metaMapShift, mapShift);
     elseif (fieldsContainButton(fields, controlZoomInBtn)) then -- Zoom +
-        local zoomStep = meta:get_int(metaZoomStep);
-        zoomStep = math.max(1, zoomStep);
-        meta:set_int(metaZoomStep, math.max(1, zoomStep - 1));
+        local zoomStep = math.max(1, meta:get_int(metaZoomStep));
+        local newZoomStep = math.max(1, zoomStep - 1);
+        meta:set_int(metaZoomStep, newZoomStep);
+
+        local oldZoomLevel = zoomSteps[zoomStep];
+        local newZoomLevel = zoomSteps[newZoomStep];
+        local mapShift = getMapShift(meta);
+        mapShift = {
+            x = math.floor(mapShift.x / (newZoomLevel / oldZoomLevel)),
+            y = math.floor(mapShift.y / (newZoomLevel / oldZoomLevel))
+        }
+        meta_set_object(meta, metaMapShift, mapShift);
+    ---------- MAP SHIFT
     elseif (fieldsContainButton(fields, controlMapShiftLeftBtn)) then -- Map Shift Left
-        local mapShift = meta_get_object(meta, metaMapShift);
-        if (mapShift == nil) then
-            mapShift = {
-                x = 0,
-                y = 0
-            };
-        end
+        local mapShift = getMapShift(meta);
         mapShift.x = math.max(0, mapShift.x - 1);
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
     elseif (fieldsContainButton(fields, controlMapShiftRightBtn)) then -- Map Shift Right
-        local mapShift = meta_get_object(meta, metaMapShift);
-        if (mapShift == nil) then
-            mapShift = {
-                x = 0,
-                y = 0
-            };
-        end
+        local mapShift = getMapShift(meta);
         mapShift.x = mapShift.x + 1;
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
     elseif (fieldsContainButton(fields, controlMapShiftUpBtn)) then -- Map Shift Up
-        local mapShift = meta_get_object(meta, metaMapShift);
-        if (mapShift == nil) then
-            mapShift = {
-                x = 0,
-                y = 0
-            };
-        end
+        local mapShift = getMapShift(meta);
         mapShift.y = math.max(0, mapShift.y - 1);
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
     elseif (fieldsContainButton(fields, controlMapShiftDownBtn)) then -- Map Shift Down
-        local mapShift = meta_get_object(meta, metaMapShift);
-        if (mapShift == nil) then
-            mapShift = {
-                x = 0,
-                y = 0
-            };
-        end
+        local mapShift = getMapShift(meta);
         mapShift.y = mapShift.y + 1;
         meta:set_string(metaMapShift, minetest.serialize(mapShift));
-
+    ---------- TARGET Y
     elseif (fieldsContainButton(fields, controlTargetYPlus1Btn)) then
         local targetY = meta:get_int(metaTargetY);
         local newTargetY = math.min(maxTargetY - spaceObject.size.up, targetY + 1);
@@ -403,18 +410,26 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
         local targetY = meta:get_int(metaTargetY);
         local newTargetY = math.max(minTargetY + spaceObject.size.down, targetY - 1000);
         meta:set_int(metaTargetY, newTargetY);
-
+    ---------- OTHER
+    elseif (fieldsContainButton(fields, controlCenterSelfBtn)) then -- Center Self
+        local zoomStep = math.max(1, meta:get_int(metaZoomStep));
+        local zoomLevel = zoomSteps[zoomStep];
+        local mapShift = {
+            x = math.floor(gridRadius / zoomLevel - mapDisplaySize / 2),
+            y = math.floor(gridRadius / zoomLevel - mapDisplaySize / 2)
+        };
+        meta_set_object(meta, metaMapShift, mapShift);
+        
     elseif (fieldsContainButton(fields, controlJumpBtn)) then -- Jump
         minetest.log("Jump initiated");
-        local areaGrid = meta_get_object(meta, metaAreaGrid);
         local selectedZone = meta_get_object(meta, metaSelectedZone);
-        if (areaGrid ~= nil and selectedZone ~= nil) then
-            local targetMapZone = areaGrid[selectedZone.x][selectedZone.y];
+        local selectedZoneData = meta_get_object(meta, metaSelectedZoneData);
+        if (selectedZoneData ~= nil) then
             local shipId = coreMeta:get_string(spacetravelships.constants.meta_ship_core_id);
             local targetY = meta:get_int(metaTargetY);
             local targetPosition = {
-                x = targetMapZone.size.min_x,
-                z = targetMapZone.size.min_z,
+                x = selectedZoneData.size.min_x,
+                z = selectedZoneData.size.min_z,
                 y = targetY
             };
             spacetravelships.move_to_position(shipId, targetPosition);
@@ -425,11 +440,6 @@ local function processControlTabEvents(meta, coreMeta, fields, spaceObject)
             return;
         end
         
-        local areaGrid = meta_get_object(meta, metaAreaGrid);
-        if (areaGrid == nil) then
-            return;
-        end
-
         local indexesPart = string.sub(gridButtonEvent, string.len(gridButtonPrefix) + 1, string.len(gridButtonEvent));
 
         local separatorIndex = string.find(indexesPart, "%_");
@@ -542,15 +552,15 @@ local function fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanRa
 end
 
 local function buildAreaGrid(meta, corePosition, coreDirection, coreMeta, zoomLevel)
-    local scanSize = gridRadius * zoomLevel;
+    local scanSize = gridRadius;-- * zoomLevel;
     local dataGrid = fetchAreaGrid(meta, corePosition, coreDirection, coreMeta, scanSize);
     -- In blocs zoomLevel X zoomLevel
     local grid = {};
 
-    for gridX = 1, gridRadius * 2 + 1 do
+    for gridX = 1, gridRadius / zoomLevel * 2 + 1 do
         table.insert(grid, {});
         local dataGridX = 1 + (gridX - 1) * zoomLevel;
-        for gridY = 1, gridRadius * 2 + 1 do
+        for gridY = 1, gridRadius / zoomLevel * 2 + 1 do
             table.insert(grid[gridX], {});
             local dataGridY = 1 + (gridY - 1) * zoomLevel;
 
@@ -615,17 +625,15 @@ local function getFormspecForActiveComputer(meta, spaceObject, coreMeta)
         local zoomLevel = zoomSteps[zoomStep];
 
         local areaGrid = buildAreaGrid(meta, spaceObject.core_position, coreDirection, coreMeta, zoomLevel);
-        meta:set_string(metaAreaGrid, minetest.serialize(areaGrid));
-        local selectedZone = meta_get_object(meta, metaSelectedZone);
 
-        local mapShift = meta_get_object(meta, metaMapShift);
-        if (mapShift == nil) then
-            mapShift = {
-                x = defaultMapShift,
-                y = defaultMapShift
-            };
-            meta:set_string(metaMapShift, minetest.serialize(mapShift));
+        local selectedZone = meta_get_object(meta, metaSelectedZone);
+        local selectedZoneData = nil;
+        if (selectedZone ~= nil and areaGrid ~= nil) then
+            selectedZoneData = areaGrid[selectedZone.x][selectedZone.y];
         end
+        meta_set_object(meta, metaSelectedZoneData, selectedZoneData);
+
+        local mapShift = getMapShift(meta);
         if (areaGrid ~= nil and mapShift.x > #areaGrid - mapDisplaySize) then
             mapShift.x = #areaGrid - mapDisplaySize;
             meta:set_string(metaMapShift, minetest.serialize(mapShift));
@@ -700,7 +708,7 @@ minetest.register_node("spacetravelships:navigation_computer", {
         local meta = minetest.get_meta(position);
         meta:set_string(metaMenuTab, tabNameControl);
 
-        minetest.get_node_timer(position):start(0.5);
+        minetest.get_node_timer(position):start(0.1);
     end,
     on_receive_fields = navigation_computer_receive_fields
 });
