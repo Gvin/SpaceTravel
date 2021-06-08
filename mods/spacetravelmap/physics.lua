@@ -26,7 +26,6 @@ end
 spacetravelmap.update_players_gravity = function()
     for _,player in ipairs(minetest.get_connected_players()) do
         local expectedGravity = getPlayerExpectedGravity(player);
-        minetest.log(minetest.serialize(player:get_player_velocity()));
         setPlayerGravity(player, expectedGravity);
     end
 end
