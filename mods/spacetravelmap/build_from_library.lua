@@ -71,6 +71,8 @@ blockAliases["F"] = "spacetravelmap:ship_found_computer";
 blockAliases["^"] = "spacetravelships:jump_engine";
 blockAliases["c"] = "spacetravelships:navigation_computer";
 blockAliases["%"] = "spacetravelships:gravity_generator";
+blockAliases["a"] = "spacetravelships:airlock_frame";
+blockAliases["A"] = "spacetravelships:airlock_control";
 
 -- Station Core
 blockAliases["S"] = function(position, mapPosition, building) -- Direction South (+X)
@@ -162,9 +164,21 @@ local function loadBuilding(path)
         lineIndex = lineIndex + 1; -- Skipping extra line between layers
     end
 
+    local commands = {};
+    for index = lineIndex, #lines do
+        local line = lines[index];
+        if (string.sub(line, 1, 1) == "$") then
+            local commandText = string.sub(line, 2, string.len(line));
+            commandText = "return "..commandText;
+            local command = minetest.deserialize(commandText);
+            table.insert(commands, command);
+        end
+    end
+
     return {
         size = size,
-        map = map
+        map = map,
+        commands = commands
     };
 end
 
@@ -174,6 +188,22 @@ local function writeMap(map)
 		file:write(minetest.serialize(map))
 		file:close()
 	end
+end
+
+local function executeCommands(position, commands)
+    for _, command in pairs(commands) do
+        if (command.command == "set_dir") then
+            local pos = {z = position.z + command.data.x, y = position.y + command.data.y, x = position.x + command.data.z};
+            local nodeName = minetest.get_node(pos).name;
+            local meta = minetest.get_meta(pos):to_table();
+            minetest.set_node(pos, {name = nodeName, param2 = command.data.dir});
+            if (command.data.saveMeta) then
+                minetest.get_meta(pos):from_table(meta);
+            end
+        else
+            error("Unknown command type: "..command.command);
+        end
+    end
 end
 
 spacetravelmap.get_building_size = function(libraryPath)
@@ -215,6 +245,8 @@ spacetravelmap.build_from_library = function(position, libraryPath)
             end 
         end
     end
+
+    executeCommands(position, building.commands);
 
     return returnValue;
 end

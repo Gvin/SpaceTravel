@@ -20,6 +20,7 @@ dofile(modPath.."/jump_engine.lua");
 dofile(modPath.."/emergency_light.lua");
 dofile(modPath.."/illuminator.lua");
 dofile(modPath.."/gravity_generator.lua");
+dofile(modPath.."/airlock.lua");
 
 dofile(modPath.."/build_ship_token.lua");
 

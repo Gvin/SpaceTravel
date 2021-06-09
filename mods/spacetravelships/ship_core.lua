@@ -92,7 +92,7 @@ minetest.register_node(spacetravelships.constants.ship_core_node, {
         local meta = minetest.get_meta(position);
         local id = meta:get_string(spacetravelships.constants.meta_ship_core_id);
 
-        if (id ~= nil and string.len(id) > 0) then
+        if (id ~= nil and string.len(id) > 0 and spacetravelships.get_is_registered(id)) then
             spacetravelships.unregister_space_object(id);
         end
     end
