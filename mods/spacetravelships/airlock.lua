@@ -1,19 +1,22 @@
 local metaFrame = "spacetravelships:airlock_frame";
 local metaDoorNodes = "spacetravelships:airlock_door_nodes";
 local metaLeftOpen = "spacetravelships:airlock_left_open";
+local metaControlNode = "spacetravelships:airlock_control_node";
 
 local groupAirlock = "spacetravelships_airlock_group";
 
 local meta_set_object = spacetravelcore.meta_set_object;
 local meta_get_object = spacetravelcore.meta_get_object;
 
+local airlockOpenTime = 3.0;
+
 local function getScanDirection(position)
     local node = minetest.get_node(position);
     local dir = node.param2;
     if (dir == 3) then -- X+
-        return {x = 0, z = 1};
-    elseif (dir == 1) then -- X-
         return {x = 0, z = -1};
+    elseif (dir == 1) then -- X-
+        return {x = 0, z = 1};
     elseif (dir == 2) then -- Z+
         return {x = 1, z = 0};
     elseif (dir == 0) then -- Z-
@@ -102,13 +105,18 @@ local function getDoorNodesPosition(frame)
         for x = startX, endX do
             for z = startZ, endZ do
                 if ((not (x == targetNode.x and z == targetNode.z)) and (not(x == initialNode.x and z == initialNode.z))) then
-                    minetest.log("x:"..x..";z:"..z);
                     table.insert(results, {x = x, z = z, y = initialNode.y});
                 end
             end
         end
     end
     return results;
+end
+
+local function placeDoorNode(position, controlNodePosition, direction)
+    minetest.set_node(position, {name = "spacetravelships:airlock_door", param2 = direction});
+    local meta = minetest.get_meta(position);
+    meta_set_object(meta, metaControlNode, controlNodePosition);
 end
 
 local function closeAirlock(position)
@@ -123,7 +131,7 @@ local function closeAirlock(position)
         end
 
         for _, pos in pairs(doorNodes) do
-            minetest.set_node(pos, {name = "spacetravelships:airlock_door", param2 = controlNode.param2});
+            placeDoorNode(pos, position, controlNode.param2);
         end
     end
 end
@@ -140,29 +148,41 @@ local function openAirlock(position)
     end
 end
 
-local function airlock_control_construct(position)
-    local frame = getFrame(position);
-    minetest.log("Frame: "..minetest.serialize(frame));
-    local meta = minetest.get_meta(position);
+local function setControlNode(frame, controlNodePosition)
+    for _, pos in pairs(frame.initial) do
+        local meta = minetest.get_meta(pos);
+        meta_set_object(meta, metaControlNode, controlNodePosition);
+    end
+    for _, pos in pairs(frame.target) do
+        local meta = minetest.get_meta(pos);
+        meta_set_object(meta, metaControlNode, controlNodePosition);
+    end
+end
+
+local function refreshFrame(controlNodePosition)
+    local meta = minetest.get_meta(controlNodePosition);
+
+    openAirlock(controlNodePosition);
+    
+    local oldFrame = meta_get_object(meta, metaFrame);
+    if (oldFrame ~= nil) then
+        setControlNode(oldFrame, nil);
+    end
+
+    local frame = getFrame(controlNodePosition);
     meta_set_object(meta, metaFrame, frame);
     local doorNodes = nil;
     if (frame ~= nil) then
+        setControlNode(frame, controlNodePosition);
         doorNodes = getDoorNodesPosition(frame);
-        minetest.log("doorNodes: "..minetest.serialize(doorNodes));
     end
     meta_set_object(meta, metaDoorNodes, doorNodes);
-    closeAirlock(position);
 
+    closeAirlock(controlNodePosition);
 end
 
-local function airlock_control_right_click(position, node, player, itemstack, pointed_thing)
-    local meta = minetest.get_meta(position);
-    local doorNodes = meta_get_object(meta, metaDoorNodes);
-    if (doorNodes ~= nil) then
-        openAirlock(position);
-        meta:set_float(metaLeftOpen, 5.0);
-        minetest.get_node_timer(position):start(1);
-    end
+local function airlock_control_construct(position)
+    refreshFrame(position);
 end
 
 local function airlock_control_on_timer(position, elapsed)
@@ -180,29 +200,65 @@ local function airlock_control_on_timer(position, elapsed)
     return true;
 end
 
+local function airlock_control_on_destruct(position)
+    local meta = minetest.get_meta(position);
+    
+    local oldFrame = meta_get_object(meta, metaFrame);
+    if (oldFrame ~= nil) then
+        setControlNode(oldFrame, nil);
+    end
+end
+
+local function airlock_frame_on_destruct(position)
+    local meta = minetest.get_meta(position);
+    local controlNodePosition = meta_get_object(meta, metaControlNode);
+    if (controlNodePosition ~= nil) then
+        refreshFrame(controlNodePosition);
+    end
+end
+
+local function airlock_door_on_rightclick(position, node, player, itemstack, pointed_thing)
+    local meta = minetest.get_meta(position);
+    local controlNode = meta_get_object(meta, metaControlNode);
+    if (controlNode == nil) then
+        error("Airlock door not linked to control node.");
+    end
+
+    -- TODO: Add security checks
+    local controlMeta = minetest.get_meta(controlNode)
+    local doorNodes = meta_get_object(controlMeta, metaDoorNodes);
+    if (doorNodes ~= nil) then
+        openAirlock(position);
+        controlMeta:set_float(metaLeftOpen, airlockOpenTime);
+        minetest.get_node_timer(controlNode):start(0.5);
+    end
+    openAirlock(controlNode);
+end
+
 minetest.register_node("spacetravelships:airlock_control", {
     description = "Airlock Control",
     tiles = {
-        "spacetraveltechnology_machine.png",
-        "spacetraveltechnology_machine.png",
-        "spacetraveltechnology_machine.png",
-        "spacetraveltechnology_machine.png",
-        "spacetraveltechnology_machine.png^spacetravelships_airlock_control.png^spacetravelships_airlock_control_direction.png^[transformFX",
-        "spacetraveltechnology_machine.png^spacetravelships_airlock_control.png^spacetravelships_airlock_control_direction.png"
+        "spacetravelships_airlock_frame.png",
+        "spacetravelships_airlock_frame.png",
+        "spacetravelships_airlock_frame.png",
+        "spacetravelships_airlock_frame.png",
+        "spacetravelships_airlock_frame.png^spacetravelships_airlock_control.png^spacetravelships_airlock_control_direction.png^[transformFX",
+        "spacetravelships_airlock_frame.png^spacetravelships_airlock_control.png^spacetravelships_airlock_control_direction.png"
     },
     paramtype2 = "facedir",
     groups = {cracky = 2, [groupAirlock] = 1},
     is_ground_content = false,
     on_construct = airlock_control_construct,
-    on_rightclick = airlock_control_right_click,
+    on_destruct = airlock_control_on_destruct,
     on_timer = airlock_control_on_timer
 });
 
 minetest.register_node("spacetravelships:airlock_frame", {
     description = "Airlock Frame",
-    tiles = {"spacetraveltechnology_machine.png"},
+    tiles = {"spacetravelships_airlock_frame.png"},
     groups = {cracky = 2, [groupAirlock] = 1},
     is_ground_content = false,
+    on_destruct = airlock_frame_on_destruct
 });
 
 local doorNodebox = {
@@ -216,8 +272,9 @@ minetest.register_node("spacetravelships:airlock_door", {
     description = "Airlock Door",
     tiles = {"spacetravelships_airlock_door.png"},
     paramtype2 = "facedir",
-    groups = {cracky = 2},
+    groups = {cracky = 2, not_in_creative_inventory=1},
     is_ground_content = false,
     drawtype = "nodebox",
-    node_box = doorNodebox
+    node_box = doorNodebox,
+    on_rightclick = airlock_door_on_rightclick
 });
