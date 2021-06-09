@@ -73,6 +73,7 @@ blockAliases["c"] = "spacetravelships:navigation_computer";
 blockAliases["%"] = "spacetravelships:gravity_generator";
 blockAliases["a"] = "spacetravelships:airlock_frame";
 blockAliases["A"] = "spacetravelships:airlock_control";
+blockAliases["B"] = "spacetravelships:air_blocker_field_generator";
 
 -- Station Core
 blockAliases["S"] = function(position, mapPosition, building) -- Direction South (+X)
