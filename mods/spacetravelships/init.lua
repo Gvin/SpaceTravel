@@ -22,6 +22,7 @@ dofile(modPath.."/illuminator.lua");
 dofile(modPath.."/gravity_generator.lua");
 dofile(modPath.."/airlock.lua");
 dofile(modPath.."/air_blocker_field.lua");
+dofile(modPath.."/shuttle.lua");
 
 dofile(modPath.."/build_ship_token.lua");
 

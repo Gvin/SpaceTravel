@@ -58,6 +58,7 @@ local function giveStartingItems(player)
     player:get_inventory():add_item("main", "spacetravelships:navigation_computer");
     player:get_inventory():add_item("main", "spacetravelships:airlock_control 10");
     player:get_inventory():add_item("main", "spacetravelships:airlock_frame 20");
+    player:get_inventory():add_item("main", "spacetravelships:shuttle");
 end
 
 minetest.register_on_newplayer(function(player)
